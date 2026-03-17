@@ -18,4 +18,9 @@ const SLIDES = [
   'slides/05-use-cases/slide.html',
   'slides/06-start/slide.html',
   'slides/07-quote-demo/slide.html',
+  // ── 扩展演示 ──────────────────────────────
+  'slides/08-image-demo/slide.html',   // 图文混排
+  'slides/09-table-demo/slide.html',   // 数据表格
+  'slides/10-code-styles/slide.html',  // 多语言代码块
+  'slides/11-charts/slide.html',       // 复杂排版：折线图+柱状图+统计卡片
 ];

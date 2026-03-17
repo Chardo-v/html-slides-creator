@@ -1,0 +1,176 @@
+<div class="layout-dashboard">
+
+  <!-- 标题区 -->
+  <div class="dashboard-header">
+    <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+      <div class="tag" style="margin-bottom:0">数据可视化</div>
+      <h2 style="margin-bottom:0;font-size:1.7rem">框架能力全景</h2>
+      <span style="font-size:0.85rem;color:var(--muted);margin-left:auto">折线图 · 柱状图 · 统计卡片 · 混合排版</span>
+    </div>
+  </div>
+
+  <!-- 主体 -->
+  <div class="dashboard-body">
+
+    <!-- 左列：折线图 -->
+    <div class="chart-wrap">
+      <div class="chart-title">生产效率指数 — 引入 AI 辅助前后趋势（2024 Q1–Q3）</div>
+      <svg viewBox="0 0 400 210" xmlns="http://www.w3.org/2000/svg" style="overflow:visible">
+        <defs>
+          <linearGradient id="lineAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%"   stop-color="var(--accent)" stop-opacity="0.28"/>
+            <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.00"/>
+          </linearGradient>
+          <filter id="lineShadow" x="-10%" y="-10%" width="120%" height="130%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="var(--accent)" flood-opacity="0.3"/>
+          </filter>
+        </defs>
+
+        <!-- 网格线 -->
+        <line x1="40" y1="20"  x2="380" y2="20"  stroke="var(--border)" stroke-width="1"/>
+        <line x1="40" y1="59"  x2="380" y2="59"  stroke="var(--border)" stroke-width="1"/>
+        <line x1="40" y1="98"  x2="380" y2="98"  stroke="var(--border)" stroke-width="1"/>
+        <line x1="40" y1="137" x2="380" y2="137" stroke="var(--border)" stroke-width="1"/>
+        <line x1="40" y1="176" x2="380" y2="176" stroke="var(--border)" stroke-width="1"/>
+
+        <!-- Y 轴刻度 -->
+        <text x="34" y="23"  text-anchor="end" font-size="9" fill="var(--muted)">100</text>
+        <text x="34" y="62"  text-anchor="end" font-size="9" fill="var(--muted)">75</text>
+        <text x="34" y="101" text-anchor="end" font-size="9" fill="var(--muted)">50</text>
+        <text x="34" y="140" text-anchor="end" font-size="9" fill="var(--muted)">25</text>
+        <text x="34" y="179" text-anchor="end" font-size="9" fill="var(--muted)">0</text>
+
+        <!-- 基准线（引入 AI 前均值 ~30） -->
+        <!-- 数据点：月份=1..7，值(0-100)=18,32,28,50,46,68,84 -->
+        <!-- x: 40 93 147 200 253 307 360  (step≈56.7) -->
+        <!-- y = 176 - val*156/100 -->
+        <!-- 18→148  32→126  28→132  50→98  46→104  68→70  84→45 -->
+
+        <!-- 面积填充 -->
+        <polygon
+          points="40,176 40,148 93,126 147,132 200,98 253,104 307,70 360,45 360,176"
+          fill="url(#lineAreaGrad)"/>
+
+        <!-- 折线 -->
+        <polyline
+          points="40,148 93,126 147,132 200,98 253,104 307,70 360,45"
+          fill="none" stroke="var(--accent)" stroke-width="2.5"
+          stroke-linejoin="round" stroke-linecap="round"
+          filter="url(#lineShadow)"/>
+
+        <!-- 数据点 -->
+        <circle cx="40"  cy="148" r="4" fill="var(--accent)" stroke="white" stroke-width="1.5"/>
+        <circle cx="93"  cy="126" r="4" fill="var(--accent)" stroke="white" stroke-width="1.5"/>
+        <circle cx="147" cy="132" r="4" fill="var(--accent)" stroke="white" stroke-width="1.5"/>
+        <circle cx="200" cy="98"  r="4" fill="var(--accent)" stroke="white" stroke-width="1.5"/>
+        <circle cx="253" cy="104" r="4" fill="var(--accent)" stroke="white" stroke-width="1.5"/>
+        <circle cx="307" cy="70"  r="5" fill="var(--accent)" stroke="white" stroke-width="2"/>
+        <circle cx="360" cy="45"  r="6" fill="var(--accent)" stroke="white" stroke-width="2"/>
+
+        <!-- 最高点标注 -->
+        <text x="360" y="36" text-anchor="middle" font-size="10" fill="var(--accent)" font-weight="700">+84%</text>
+
+        <!-- X 轴标签 -->
+        <text x="40"  y="192" text-anchor="middle" font-size="9" fill="var(--muted)">1月</text>
+        <text x="93"  y="192" text-anchor="middle" font-size="9" fill="var(--muted)">2月</text>
+        <text x="147" y="192" text-anchor="middle" font-size="9" fill="var(--muted)">3月</text>
+        <text x="200" y="192" text-anchor="middle" font-size="9" fill="var(--accent)" font-weight="600">4月↑</text>
+        <text x="253" y="192" text-anchor="middle" font-size="9" fill="var(--muted)">5月</text>
+        <text x="307" y="192" text-anchor="middle" font-size="9" fill="var(--muted)">6月</text>
+        <text x="360" y="192" text-anchor="middle" font-size="9" fill="var(--muted)">7月</text>
+
+        <!-- AI 引入标注竖线 -->
+        <line x1="200" y1="20" x2="200" y2="176" stroke="var(--accent)" stroke-width="1"
+              stroke-dasharray="4 3" opacity="0.5"/>
+        <text x="204" y="34" font-size="8.5" fill="var(--accent)" opacity="0.8">引入 AI</text>
+
+        <!-- 图例 -->
+        <circle cx="46" cy="205" r="4" fill="var(--accent)"/>
+        <text x="54" y="208" font-size="9" fill="var(--muted)">效率指数（基线 = 30）</text>
+      </svg>
+    </div>
+
+    <!-- 右列 -->
+    <div class="dashboard-right">
+
+      <!-- 统计卡片 -->
+      <div class="dashboard-stats">
+        <div class="mini-stat">
+          <div class="mini-stat-num">7+</div>
+          <div class="mini-stat-label">内容格式<br>原生支持</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-num" style="font-size:1.6rem">&lt;2h</div>
+          <div class="mini-stat-label">平均<br>上手时间</div>
+        </div>
+        <div class="mini-stat">
+          <div class="mini-stat-num">5</div>
+          <div class="mini-stat-label">内置<br>视觉主题</div>
+        </div>
+      </div>
+
+      <!-- 柱状图 -->
+      <div class="chart-wrap">
+        <div class="chart-title">各内容类型支持完善度（%）</div>
+        <!--
+          viewBox 260×152
+          类型标签: x=0~56, text-anchor=end
+          条形区域: x=62, 最大宽=160 (100%)
+          %标签: 紧贴条形右端，最远 x=62+160+28=250 < 260
+          行高=22, 6行: y_center=14,36,58,80,102,124
+        -->
+        <svg viewBox="0 0 260 152" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="barGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"   stop-color="var(--accent)" stop-opacity="0.9"/>
+              <stop offset="100%" stop-color="var(--accent)" stop-opacity="0.45"/>
+            </linearGradient>
+          </defs>
+
+          <!-- 网格竖线 x=62+160*[.25,.5,.75,1] = 102, 142, 182, 222 -->
+          <line x1="102" y1="4"  x2="102" y2="132" stroke="var(--border)" stroke-width="1"/>
+          <line x1="142" y1="4"  x2="142" y2="132" stroke="var(--border)" stroke-width="1"/>
+          <line x1="182" y1="4"  x2="182" y2="132" stroke="var(--border)" stroke-width="1"/>
+          <line x1="222" y1="4"  x2="222" y2="132" stroke="var(--border)" stroke-width="1"/>
+
+          <!-- X 轴刻度 -->
+          <text x="102" y="142" text-anchor="middle" font-size="8" fill="var(--muted)">25%</text>
+          <text x="142" y="142" text-anchor="middle" font-size="8" fill="var(--muted)">50%</text>
+          <text x="182" y="142" text-anchor="middle" font-size="8" fill="var(--muted)">75%</text>
+          <text x="222" y="142" text-anchor="middle" font-size="8" fill="var(--muted)">100%</text>
+
+          <!-- 文字排版 95% → w=152 → 右端 x=214 -->
+          <text x="58" y="14" text-anchor="end" font-size="9" fill="var(--text)" dominant-baseline="middle">文字排版</text>
+          <rect x="62" y="6"  width="152" height="15" rx="3" fill="url(#barGrad)"/>
+          <text x="218" y="14" font-size="9" fill="var(--accent)" font-weight="700" dominant-baseline="middle">95%</text>
+
+          <!-- 代码块 90% → w=144 → 右端 x=206 -->
+          <text x="58" y="36" text-anchor="end" font-size="9" fill="var(--text)" dominant-baseline="middle">代码块</text>
+          <rect x="62" y="28" width="144" height="15" rx="3" fill="url(#barGrad)"/>
+          <text x="210" y="36" font-size="9" fill="var(--accent)" font-weight="700" dominant-baseline="middle">90%</text>
+
+          <!-- 图片嵌入 78% → w=125 → 右端 x=187 -->
+          <text x="58" y="58" text-anchor="end" font-size="9" fill="var(--text)" dominant-baseline="middle">图片嵌入</text>
+          <rect x="62" y="50" width="125" height="15" rx="3" fill="url(#barGrad)"/>
+          <text x="191" y="58" font-size="9" fill="var(--accent)" font-weight="700" dominant-baseline="middle">78%</text>
+
+          <!-- 数据表格 74% → w=118 → 右端 x=180 -->
+          <text x="58" y="80" text-anchor="end" font-size="9" fill="var(--text)" dominant-baseline="middle">数据表格</text>
+          <rect x="62" y="72" width="118" height="15" rx="3" fill="url(#barGrad)"/>
+          <text x="184" y="80" font-size="9" fill="var(--accent)" font-weight="700" dominant-baseline="middle">74%</text>
+
+          <!-- SVG 图表 68% → w=109 → 右端 x=171 -->
+          <text x="58" y="102" text-anchor="end" font-size="9" fill="var(--text)" dominant-baseline="middle">SVG 图表</text>
+          <rect x="62" y="94" width="109" height="15" rx="3" fill="url(#barGrad)"/>
+          <text x="175" y="102" font-size="9" fill="var(--accent)" font-weight="700" dominant-baseline="middle">68%</text>
+
+          <!-- 动画效果 55% → w=88 → 右端 x=150 -->
+          <text x="58" y="124" text-anchor="end" font-size="9" fill="var(--muted)" dominant-baseline="middle">动画效果</text>
+          <rect x="62" y="116" width="88" height="15" rx="3" fill="url(#barGrad)" opacity="0.55"/>
+          <text x="154" y="124" font-size="9" fill="var(--muted)" font-weight="600" dominant-baseline="middle">55%</text>
+        </svg>
+      </div>
+
+    </div>
+  </div>
+</div>
