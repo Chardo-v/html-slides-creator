@@ -12,15 +12,15 @@ const GLOBAL_CONFIG = {
 
 // 幻灯片顺序 — 调整顺序只需移动行，无需改其他文件
 const SLIDES = [
-  'slides/01-title/slide.html',
-  'slides/02-what-is-claude/slide.html',
-  'slides/03-capabilities/slide.html',
-  'slides/04-claude-code/slide.html',
-  'slides/05-use-cases/slide.html',
-  'slides/06-start/slide.html',
-  'slides/07-quote-demo/slide.html',
-  'slides/08-image-demo/slide.html',   // 图文混排
-  'slides/09-table-demo/slide.html',   // 数据表格
-  'slides/10-code-styles/slide.html',  // 多语言代码块
-  'slides/11-charts/slide.html',       // 复杂排版：折线图+柱状图+统计卡片
+  'example-slides/01-title/slide.html',
+  'example-slides/02-what-is-claude/slide.html',
+  'example-slides/03-capabilities/slide.html',
+  'example-slides/04-claude-code/slide.html',
+  'example-slides/05-use-cases/slide.html',
+  'example-slides/06-start/slide.html',
+  'example-slides/07-quote-demo/slide.html',
+  'example-slides/08-image-demo/slide.html',   // 图文混排
+  'example-slides/09-table-demo/slide.html',   // 数据表格
+  'example-slides/10-code-styles/slide.html',  // 多语言代码块
+  'example-slides/11-charts/slide.html',       // 复杂排版：折线图+柱状图+统计卡片
 ];

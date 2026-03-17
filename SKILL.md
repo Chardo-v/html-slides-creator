@@ -13,27 +13,29 @@ description: >
 ## 项目结构
 
 ```
-slides.js          — 全局配置（标题、比例、边距）和幻灯片列表
-themes.js          — 5 个主题定义（dawn / dusk / aurora / field / ink）
-theme.css          — 所有布局类、组件类、CSS 变量
+slides.js               — 全局配置（标题、比例、边距）和幻灯片列表
+themes.js               — 5 个主题定义（dawn / dusk / aurora / field / ink）
+theme.css               — 所有布局类、组件类、CSS 变量
+example-slides/NN-name/ — 示例幻灯片，供参考写法
 slides/NN-name/
-  slide.html       — 单页幻灯片内容（无 html/head/body 标签）
+  slide.html            — 单页幻灯片内容（无 html/head/body 标签）
 ```
 
 ## 工作流
 
-1. **理解内容** — 弄清要展示的信息类型和目的。
-2. **选布局** — 按下方布局参考选最合适的结构。
-3. **创建文件** — 在 `slides/` 下新建 `NN-name/slide.html`，目录名用两位序号前缀。
-4. **注册** — 把路径加入 `slides.js` 的 `SLIDES` 数组。
-5. **验证** — 最外层是单个 `<div>`，类名拼写正确，颜色用 CSS 变量。
+1. **获取模板** — 如果当前目录没有框架文件，先从 https://github.com/Chardo-v/html-slides-creator 克隆基础模板，再在此目录下工作。
+2. **理解内容** — 弄清要展示的信息类型和目的。
+3. **选布局** — 按下方布局参考选最合适的结构；可参考 `example-slides/` 下的真实示例。
+4. **创建文件** — 在 `slides/` 下新建 `NN-name/slide.html`，目录名用两位序号前缀。
+5. **注册** — 把路径加入 `slides.js` 的 `SLIDES` 数组。
+6. **验证** — 最外层是单个 `<div>`，类名拼写正确，颜色用 CSS 变量。
 
 ## 关键约束
 
 - `slide.html` **不能含** `<html>` `<head>` `<body>` 标签——内容直接被 `innerHTML` 插入。
 - **最外层必须是单个 `<div>`**，带布局类。
 - **颜色全部用 CSS 变量**（`var(--accent)` 等），禁止硬编码色值，否则主题切换会出错。
-- 参考 `slides/` 下已有页面的真实 HTML 作为写法依据。
+- 参考 `example-slides/` 下已有页面的真实 HTML 作为写法依据。
 
 ## 布局参考
 
