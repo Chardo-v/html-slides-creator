@@ -69,36 +69,55 @@
 
   const DRAG_THRESHOLD = 6; // px，超过此距离才判定为拖拽
 
-  // 选中覆盖层（只保留边框 + 缩放手柄 + 重置按钮）
+  // 选中覆盖层：右下角缩放、左下角旋转、四边拉伸、右上角重置
   const ov = document.createElement('div');
   ov.id = 'sel-overlay';
   ov.innerHTML = `
-    <div class="sel-info"></div>
-    <div class="sel-resize" title="拖动缩放"></div>
+    <div class="sel-rotate" title="旋转"></div>
+    <div class="sel-resize" title="缩放"></div>
     <button class="sel-reset" title="重置变换 (↺)">↺</button>
+    <div class="sel-edge sel-edge-t" data-dir="t"></div>
+    <div class="sel-edge sel-edge-b" data-dir="b"></div>
+    <div class="sel-edge sel-edge-l" data-dir="l"></div>
+    <div class="sel-edge sel-edge-r" data-dir="r"></div>
   `;
   document.body.appendChild(ov);
 
   function getTransform(el) {
     const t = el.style.transform || '';
     const m = t.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\)/);
-    const s = t.match(/scale\(([-\d.]+)\)/);
-    return { tx: m ? +m[1] : 0, ty: m ? +m[2] : 0, scale: s ? +s[1] : 1 };
+    const r = t.match(/rotate\(([-\d.]+)deg\)/);
+    const s = t.match(/scale\(([-\d.]+)(?:,\s*([-\d.]+))?\)/);
+    return {
+      tx:  m ? +m[1] : 0,
+      ty:  m ? +m[2] : 0,
+      rot: r ? +r[1] : 0,
+      sx:  s ? +s[1] : 1,
+      sy:  s ? +(s[2] !== undefined ? s[2] : s[1]) : 1,
+    };
   }
-  function setTransform(el, tx, ty, scale) {
-    el.style.transform       = `translate(${tx}px,${ty}px) scale(${scale})`;
+  function setTransform(el, tx, ty, rot, sx, sy) {
+    el.style.transform       = `translate(${tx}px,${ty}px) rotate(${rot}deg) scale(${sx},${sy})`;
     el.style.transformOrigin = 'center center';
   }
 
+  // 用元素中心 + 自然尺寸 × scale 来定位覆盖层，并附带旋转
   function positionOv() {
     if (!selTarget) return;
-    const r = selTarget.getBoundingClientRect();
+    const { rot, sx, sy } = getTransform(selTarget);
+    const ds = getDeckScale();
+    const r  = selTarget.getBoundingClientRect();
+    const cx = r.left + r.width  / 2;
+    const cy = r.top  + r.height / 2;
+    const nw = selTarget.offsetWidth  * Math.abs(sx) * ds;
+    const nh = selTarget.offsetHeight * Math.abs(sy) * ds;
     Object.assign(ov.style, {
-      left: r.left + 'px', top: r.top + 'px',
-      width: r.width + 'px', height: r.height + 'px',
+      left:      (cx - nw / 2) + 'px',
+      top:       (cy - nh / 2) + 'px',
+      width:     nw + 'px',
+      height:    nh + 'px',
+      transform: `rotate(${rot}deg)`,
     });
-    ov.querySelector('.sel-info').textContent =
-      selTarget.className ? `.${selTarget.className.split(' ')[0]}` : selTarget.tagName.toLowerCase();
   }
 
   function selectEl(el) {
@@ -125,23 +144,59 @@
     while (el && el !== slide) {
       const p = el.parentElement;
       if (!p) break;
-      if (p === slide || LAYOUT_CLS.some(s => p.matches(s))) return el;
+      if (p === slide || LAYOUT_CLS.some(s => p.matches(s))) {
+        if (LAYOUT_CLS.some(s => el.matches(s))) return null;
+        return el;
+      }
       el = p;
     }
-    return slide.firstElementChild || null;
+    return null;
   }
 
-  // 缩放手柄 drag
+  // ── 右下角：等比缩放 ──
   let resizeDrag = null;
   ov.querySelector('.sel-resize').addEventListener('mousedown', e => {
     e.preventDefault(); e.stopPropagation();
     if (!selTarget) return;
-    const { tx, ty, scale } = getTransform(selTarget);
-    const r = selTarget.getBoundingClientRect();
-    resizeDrag = { startX: e.clientX, startY: e.clientY, tx, ty, startScale: scale, ox: r.left, oy: r.top };
+    const { tx, ty, rot, sx, sy } = getTransform(selTarget);
+    const r  = selTarget.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top  + r.height / 2;
+    resizeDrag = { tx, ty, rot, startSx: sx, startSy: sy, cx, cy,
+                   startX: e.clientX, startY: e.clientY };
   });
 
-  // 重置
+  // ── 左下角：旋转 ──
+  let rotateDrag = null;
+  ov.querySelector('.sel-rotate').addEventListener('mousedown', e => {
+    e.preventDefault(); e.stopPropagation();
+    if (!selTarget) return;
+    const { tx, ty, rot, sx, sy } = getTransform(selTarget);
+    const r  = selTarget.getBoundingClientRect();
+    const cx = r.left + r.width  / 2;
+    const cy = r.top  + r.height / 2;
+    const startAngle = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI;
+    rotateDrag = { tx, ty, startRot: rot, sx, sy, cx, cy, startAngle };
+  });
+
+  // ── 四边：单轴拉伸 ──
+  let edgeDrag = null;
+  ov.querySelectorAll('.sel-edge').forEach(handle => {
+    handle.addEventListener('mousedown', e => {
+      e.preventDefault(); e.stopPropagation();
+      if (!selTarget) return;
+      const { tx, ty, rot, sx, sy } = getTransform(selTarget);
+      edgeDrag = {
+        dir: handle.dataset.dir, tx, ty, rot,
+        startSx: sx, startSy: sy,
+        startX: e.clientX, startY: e.clientY,
+        naturalW: selTarget.offsetWidth,
+        naturalH: selTarget.offsetHeight,
+      };
+    });
+  });
+
+  // ── 重置 ──
   ov.querySelector('.sel-reset').addEventListener('click', e => {
     e.stopPropagation();
     if (!selTarget) return;
@@ -160,17 +215,51 @@
     const target = findSelectable(e.target, slide);
     if (!target) return;
     if (target !== selTarget) selectEl(target);
-    const { tx, ty, scale } = getTransform(target);
-    pendingDrag = { el: target, startX: e.clientX, startY: e.clientY, startTx: tx, startTy: ty, scale, isDragging: false };
+    const { tx, ty, rot, sx, sy } = getTransform(target);
+    pendingDrag = { el: target, startX: e.clientX, startY: e.clientY,
+                    startTx: tx, startTy: ty, rot, sx, sy, isDragging: false };
   });
 
   document.addEventListener('mousemove', e => {
-    // 缩放拖拽（resize handle）
+    // 等比缩放（右下角）
     if (resizeDrag && selTarget) {
-      const dist = Math.hypot(e.clientX - resizeDrag.ox, e.clientY - resizeDrag.oy);
-      const startDist = Math.hypot(resizeDrag.startX - resizeDrag.ox, resizeDrag.startY - resizeDrag.oy);
-      const newScale = Math.max(0.15, resizeDrag.startScale * (dist / Math.max(startDist, 1)));
-      setTransform(selTarget, resizeDrag.tx, resizeDrag.ty, newScale);
+      const dist      = Math.hypot(e.clientX - resizeDrag.cx, e.clientY - resizeDrag.cy);
+      const startDist = Math.hypot(resizeDrag.startX - resizeDrag.cx, resizeDrag.startY - resizeDrag.cy);
+      const factor    = dist / Math.max(startDist, 1);
+      const newSx     = Math.max(0.05, resizeDrag.startSx * factor);
+      const newSy     = Math.max(0.05, resizeDrag.startSy * factor);
+      setTransform(selTarget, resizeDrag.tx, resizeDrag.ty, resizeDrag.rot, newSx, newSy);
+      positionOv();
+      return;
+    }
+    // 旋转（左下角）
+    if (rotateDrag && selTarget) {
+      const angle = Math.atan2(e.clientY - rotateDrag.cy, e.clientX - rotateDrag.cx) * 180 / Math.PI;
+      const rot   = rotateDrag.startRot + (angle - rotateDrag.startAngle);
+      setTransform(selTarget, rotateDrag.tx, rotateDrag.ty, rot, rotateDrag.sx, rotateDrag.sy);
+      positionOv();
+      return;
+    }
+    // 边缘拉伸
+    if (edgeDrag && selTarget) {
+      const dx  = e.clientX - edgeDrag.startX;
+      const dy  = e.clientY - edgeDrag.startY;
+      const ds  = getDeckScale();
+      // 将屏幕位移投影到元素本地坐标系（补偿旋转）
+      const rad = edgeDrag.rot * Math.PI / 180;
+      const lx  = ( dx * Math.cos(rad) + dy * Math.sin(rad)) / ds;
+      const ly  = (-dx * Math.sin(rad) + dy * Math.cos(rad)) / ds;
+      let sx = edgeDrag.startSx, sy = edgeDrag.startSy;
+      if (edgeDrag.dir === 'l' || edgeDrag.dir === 'r') {
+        const sign  = edgeDrag.dir === 'r' ? 1 : -1;
+        const newW  = Math.max(20, edgeDrag.naturalW * edgeDrag.startSx + sign * lx * 2);
+        sx = newW / edgeDrag.naturalW;
+      } else {
+        const sign  = edgeDrag.dir === 'b' ? 1 : -1;
+        const newH  = Math.max(10, edgeDrag.naturalH * edgeDrag.startSy + sign * ly * 2);
+        sy = newH / edgeDrag.naturalH;
+      }
+      setTransform(selTarget, edgeDrag.tx, edgeDrag.ty, edgeDrag.rot, sx, sy);
       positionOv();
       return;
     }
@@ -185,16 +274,17 @@
     }
     if (pendingDrag.isDragging) {
       const ds = getDeckScale();
-      setTransform(pendingDrag.el, pendingDrag.startTx + dx / ds, pendingDrag.startTy + dy / ds, pendingDrag.scale);
+      setTransform(pendingDrag.el,
+        pendingDrag.startTx + dx / ds, pendingDrag.startTy + dy / ds,
+        pendingDrag.rot, pendingDrag.sx, pendingDrag.sy);
       positionOv();
     }
   });
 
   document.addEventListener('mouseup', () => {
-    if (resizeDrag) {
-      resizeDrag = null;
-      if (selTarget) addHistory(`缩放 第${cur+1}页 ${selTarget.tagName.toLowerCase()}`);
-    }
+    if (resizeDrag) { resizeDrag = null; if (selTarget) addHistory(`缩放 第${cur+1}页`); }
+    if (rotateDrag) { rotateDrag = null; if (selTarget) addHistory(`旋转 第${cur+1}页`); }
+    if (edgeDrag)   { edgeDrag   = null; if (selTarget) addHistory(`拉伸 第${cur+1}页`); }
     if (pendingDrag) {
       if (pendingDrag.isDragging) addHistory(`移动 第${cur+1}页 ${pendingDrag.el.tagName.toLowerCase()}`);
       pendingDrag = null;

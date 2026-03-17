@@ -211,20 +211,19 @@ body.edit-mode .slide.active *:not(.edit-selected) { cursor: grab; }
   border-radius: 3px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.35);
 }
-/* 元素类型标签（左上角） */
-.sel-info {
-  position: absolute; top: -22px; left: 0;
-  background: var(--accent, #c05530); color: #fff;
-  padding: 2px 8px; border-radius: 4px 4px 4px 0;
-  font-size: 11px; font-weight: 600; font-family: monospace;
-  pointer-events: none; white-space: nowrap;
-}
-/* 缩放手柄（右下角） */
+/* 右下角：等比缩放 */
 .sel-resize {
   position: absolute; bottom: -7px; right: -7px;
   width: 14px; height: 14px;
   background: var(--accent, #c05530); border: 2px solid #fff;
   border-radius: 3px; cursor: nwse-resize; pointer-events: all;
+}
+/* 左下角：旋转 */
+.sel-rotate {
+  position: absolute; bottom: -7px; left: -7px;
+  width: 14px; height: 14px;
+  background: #4a90d9; border: 2px solid #fff;
+  border-radius: 50%; cursor: crosshair; pointer-events: all;
 }
 /* 重置按钮（右上角） */
 .sel-reset {
@@ -235,3 +234,23 @@ body.edit-mode .slide.active *:not(.edit-selected) { cursor: grab; }
   transition: color 0.15s;
 }
 .sel-reset:hover { color: var(--accent); }
+/* 四边拉伸手柄 */
+.sel-edge {
+  position: absolute;
+  background: var(--accent, #c05530); border: 2px solid #fff;
+  border-radius: 3px; pointer-events: all;
+}
+.sel-edge-t, .sel-edge-b {
+  width: 28px; height: 8px;
+  left: 50%; transform: translateX(-50%);
+  cursor: ns-resize;
+}
+.sel-edge-t { top: -4px; }
+.sel-edge-b { bottom: -4px; }
+.sel-edge-l, .sel-edge-r {
+  width: 8px; height: 28px;
+  top: 50%; transform: translateY(-50%);
+  cursor: ew-resize;
+}
+.sel-edge-l { left: -4px; }
+.sel-edge-r { right: -4px; }
