@@ -1,0 +1,29 @@
+/*
+  过渡动画 — 与幻灯片内容完全解耦
+  切换动画只需修改 <body data-transition="...">
+  可选值: slide | fade | zoom
+*/
+
+.slide {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transition: opacity 0.45s ease, transform 0.45s ease;
+  pointer-events: none;
+}
+.slide.active { pointer-events: all; }
+
+/* ── slide（默认：左右推入） ── */
+[data-transition="slide"] .slide.past   { opacity: 0; transform: translateX(-60px); }
+[data-transition="slide"] .slide.active { opacity: 1; transform: translateX(0);     }
+[data-transition="slide"] .slide.future { opacity: 0; transform: translateX(60px);  }
+
+/* ── fade（淡入淡出） ── */
+[data-transition="fade"] .slide.past   { opacity: 0; transform: none; }
+[data-transition="fade"] .slide.active { opacity: 1; transform: none; }
+[data-transition="fade"] .slide.future { opacity: 0; transform: none; }
+
+/* ── zoom（缩放） ── */
+[data-transition="zoom"] .slide.past   { opacity: 0; transform: scale(0.88);  }
+[data-transition="zoom"] .slide.active { opacity: 1; transform: scale(1);     }
+[data-transition="zoom"] .slide.future { opacity: 0; transform: scale(1.12);  }

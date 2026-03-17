@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude & Codex 培训</title>
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="transitions.css">
+  <link rel="stylesheet" href="editor.css">
+</head>
+<body data-transition="slide">
+
+  <!-- 流动背景 -->
+  <div id="bg">
+    <div class="blob" id="b1"></div>
+    <div class="blob" id="b2"></div>
+    <div class="blob" id="b3"></div>
+    <div class="blob" id="b4"></div>
+  </div>
+
+  <!-- Stage：按比例缩放的舞台容器 -->
+  <div id="stage">
+    <div id="deck"></div>
+  </div>
+
+  <footer id="bar">
+    <span id="counter">— / —</span>
+    <div id="track"><div id="fill"></div></div>
+    <span id="hint">空格 / → 下一页 &nbsp;← 上一页</span>
+  </footer>
+
+  <!-- 编辑面板 -->
+  <aside id="panel">
+    <div class="pnl-head">
+      <span>✎ 编辑模式</span>
+      <button id="btn-present">▶ 演示</button>
+    </div>
+    <div class="pnl-body">
+
+      <div class="pnl-section">
+        <div class="pnl-label">主题</div>
+        <div id="theme-swatches" class="theme-swatches"></div>
+      </div>
+
+      <div class="pnl-section">
+        <div class="pnl-label">过渡动画</div>
+        <div id="trans-options"></div>
+      </div>
+
+      <div class="pnl-section">
+        <div class="pnl-label">页面比例</div>
+        <div id="ratio-btns" class="ratio-btns">
+          <button class="ratio-btn" data-ratio="16:9">16:9</button>
+          <button class="ratio-btn" data-ratio="4:3">4:3</button>
+          <button class="ratio-btn" data-ratio="1:1">1:1</button>
+          <button class="ratio-btn" data-ratio="21:9">21:9</button>
+        </div>
+      </div>
+
+      <div class="pnl-section">
+        <div class="pnl-label">页面</div>
+        <div id="slide-nav"></div>
+      </div>
+
+      <div class="pnl-section pnl-history">
+        <div class="pnl-label">历史记录</div>
+        <div id="history-list"></div>
+      </div>
+
+      <div class="pnl-footer">
+        <button id="btn-save"  class="pnl-btn-primary">💾 保存所有编辑</button>
+        <button id="btn-reset" class="pnl-btn-ghost">↺ 重置当前页</button>
+      </div>
+
+    </div>
+  </aside>
+
+  <button id="btn-edit" title="打开编辑器">✎</button>
+  <div id="toast"></div>
+
+  <script src="slides.js"></script>
+  <script src="themes.js"></script>
+  <script>
+    const deck    = document.getElementById('deck');
+    const fill    = document.getElementById('fill');
+    const counter = document.getElementById('counter');
+    let cur = 0;
+
+    // 从配置 & localStorage 应用页面比例
+    (function applyRatio() {
+      const saved = localStorage.getItem('pres-aspect-ratio');
+      const ratio = saved || GLOBAL_CONFIG.aspectRatio || '16:9';
+      const [rw, rh] = ratio.split(':');
+      document.documentElement.style.setProperty('--aspect-ratio', `${rw}/${rh}`);
+      // 同步 GLOBAL_CONFIG padding → CSS vars（供 AI 生成的 slide 使用）
+      document.documentElement.style.setProperty('--v-pad', GLOBAL_CONFIG.vPad + 'px');
+      document.documentElement.style.setProperty('--h-pad', GLOBAL_CONFIG.hPad + 'px');
+    })();
+
+    async function init() {
+      for (const path of SLIDES) {
+        const html = await fetch(path).then(r => r.text());
+        const div  = document.createElement('div');
+        div.className = 'slide future';
+        div.innerHTML = html;
+        deck.appendChild(div);
+      }
+      go(0);
+      window.dispatchEvent(new Event('pres-ready'));
+    }
+
+    function go(index) {
+      deck.querySelectorAll('.slide').forEach((s, i) => {
+        s.className = 'slide ' + (i < index ? 'past' : i === index ? 'active' : 'future');
+      });
+      cur = index;
+      counter.textContent = `${cur + 1} / ${SLIDES.length}`;
+      fill.style.width = `${(cur + 1) / SLIDES.length * 100}%`;
+      if (window.onSlideChange) window.onSlideChange(index);
+    }
+
+    const next = () => cur < SLIDES.length - 1 && go(cur + 1);
+    const prev = () => cur > 0 && go(cur - 1);
+
+    document.addEventListener('keydown', e => {
+      if (e.target.isContentEditable) return;
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') return; // 让 editor.js 处理
+      if ([' ', 'ArrowRight', 'ArrowDown'].includes(e.key)) { e.preventDefault(); next(); }
+      if (['ArrowLeft', 'ArrowUp'].includes(e.key))         { e.preventDefault(); prev(); }
+    });
+
+    deck.addEventListener('click', () => {
+      if (!document.body.classList.contains('edit-mode')) next();
+    });
+
+    init();
+  </script>
+  <script src="editor.js"></script>
+</body>
+</html>
