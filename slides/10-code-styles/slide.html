@@ -1,0 +1,73 @@
+<div class="slide-content">
+  <div class="tag">代码支持</div>
+  <h2 style="margin-bottom:1rem">多语言代码块</h2>
+
+  <div class="grid grid-2" style="gap:14px">
+    <!-- Python -->
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots">
+          <span class="r"></span><span class="y"></span><span class="g"></span>
+        </div>
+        <span class="code-lang-tag">Python</span>
+      </div>
+      <div class="code-body"><span class="cm"># 调用 Claude API</span>
+<span class="kw">import</span> anthropic
+
+client <span class="op">=</span> <span class="cls">anthropic</span>.<span class="fn">Anthropic</span>()
+message <span class="op">=</span> client.messages.<span class="fn">create</span>(
+    model<span class="op">=</span><span class="str">"claude-opus-4-6"</span>,
+    max_tokens<span class="op">=</span><span class="num">1024</span>,
+    messages<span class="op">=</span>[{
+        <span class="str">"role"</span>: <span class="str">"user"</span>,
+        <span class="str">"content"</span>: <span class="str">"解释量子纠缠"</span>
+    }]
+)
+<span class="fn">print</span>(message.content[<span class="num">0</span>].text)</div>
+    </div>
+
+    <!-- JSON -->
+    <div class="code-block">
+      <div class="code-header">
+        <div class="code-dots">
+          <span class="r"></span><span class="y"></span><span class="g"></span>
+        </div>
+        <span class="code-lang-tag">JSON — API Response</span>
+      </div>
+      <div class="code-body"><span class="punc">{</span>
+  <span class="key">"id"</span><span class="op">:</span> <span class="str">"msg_01XFDtMDe7..."</span>,
+  <span class="key">"type"</span><span class="op">:</span> <span class="str">"message"</span>,
+  <span class="key">"role"</span><span class="op">:</span> <span class="str">"assistant"</span>,
+  <span class="key">"model"</span><span class="op">:</span> <span class="str">"claude-opus-4-6"</span>,
+  <span class="key">"content"</span><span class="op">:</span> <span class="punc">[{</span>
+    <span class="key">"type"</span><span class="op">:</span> <span class="str">"text"</span>,
+    <span class="key">"text"</span><span class="op">:</span> <span class="str">"量子纠缠是指..."</span>
+  <span class="punc">}]</span>,
+  <span class="key">"usage"</span><span class="op">:</span> <span class="punc">{</span>
+    <span class="key">"input_tokens"</span><span class="op">:</span> <span class="num">12</span>,
+    <span class="key">"output_tokens"</span><span class="op">:</span> <span class="num">318</span>
+  <span class="punc">}</span>
+<span class="punc">}</span></div>
+    </div>
+  </div>
+
+  <!-- Bash — 全宽 -->
+  <div class="code-block" style="margin-top:14px">
+    <div class="code-header">
+      <div class="code-dots">
+        <span class="r"></span><span class="y"></span><span class="g"></span>
+      </div>
+      <span style="font-size:11px;color:rgba(200,200,220,0.5);margin:0 auto">~/project</span>
+      <span class="code-lang-tag">Bash — Claude Code</span>
+    </div>
+    <div class="code-body" style="display:grid;grid-template-columns:1fr 1fr;gap:0 32px"><span><span class="cm"># 生成单元测试</span>
+<span style="color:var(--accent)">$</span> claude <span class="str">"帮我给 utils.py 写单测"</span>
+<span style="color:#6bcb77">✓</span> 读取 utils.py
+<span style="color:#6bcb77">✓</span> 生成 12 个测试用例
+<span style="color:#6bcb77">✓</span> 全部通过</span><span><span class="cm"># 指定模型重构</span>
+<span style="color:var(--accent)">$</span> claude \
+  --model <span class="str">claude-sonnet-4-6</span> \
+  <span class="str">"重构 auth 模块，加错误处理"</span>
+<span style="color:#6bcb77">✓</span> 已修改 3 个文件</span></div>
+  </div>
+</div>
