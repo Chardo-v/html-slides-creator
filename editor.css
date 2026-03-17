@@ -6,21 +6,22 @@
   left: 0; top: 0;
   width: 100vw;
   height: calc(100vh - var(--bar-h));
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  overflow: hidden;
   transition: width 0.3s ease;
 }
 body.edit-mode #stage {
   width: calc(100vw - 256px);
 }
 
+/* Deck：固定基础宽度 1600px，通过 CSS scale 等比例适配容器 */
 #deck {
-  position: relative;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 1600px;
   aspect-ratio: var(--aspect-ratio, 16/9);
-  max-width: 100%;
-  max-height: 100%;
-  width: 100%;
+  transform: translate(-50%, -50%) scale(var(--deck-scale, 1));
+  transform-origin: center center;
   overflow: hidden;
   box-shadow: 0 4px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
 }

@@ -184,7 +184,8 @@
       document.activeElement?.blur();
     }
     if (pendingDrag.isDragging) {
-      setTransform(pendingDrag.el, pendingDrag.startTx + dx, pendingDrag.startTy + dy, pendingDrag.scale);
+      const ds = getDeckScale();
+      setTransform(pendingDrag.el, pendingDrag.startTx + dx / ds, pendingDrag.startTy + dy / ds, pendingDrag.scale);
       positionOv();
     }
   });
@@ -201,6 +202,43 @@
   });
 
   window.addEventListener('resize', positionOv);
+
+  // ═══════════════════════════════════════════════════════════
+  //  等比例缩放
+  // ═══════════════════════════════════════════════════════════
+  const BASE_DECK_W = 1600;
+
+  function updateDeckScale() {
+    const stage = document.getElementById('stage');
+    const deck  = document.getElementById('deck');
+    if (!stage || !deck) return;
+    const stageW = stage.offsetWidth;
+    const stageH = stage.offsetHeight;
+    const ar = getComputedStyle(document.documentElement)
+      .getPropertyValue('--aspect-ratio').trim() || '16/9';
+    const parts = ar.split('/');
+    const rw = parseFloat(parts[0]) || 16;
+    const rh = parseFloat(parts[1]) || 9;
+    const baseH = BASE_DECK_W * rh / rw;
+    const scale = Math.min(stageW / BASE_DECK_W, stageH / baseH);
+    document.documentElement.style.setProperty('--deck-scale', scale);
+  }
+
+  // ResizeObserver 监听 stage（含 transition 动画过程中的持续更新）
+  (function initScaleObserver() {
+    const stage = document.getElementById('stage');
+    if (window.ResizeObserver) {
+      new ResizeObserver(updateDeckScale).observe(stage);
+    } else {
+      window.addEventListener('resize', updateDeckScale);
+    }
+  })();
+
+  function getDeckScale() {
+    return parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--deck-scale')
+    ) || 1;
+  }
 
   // ═══════════════════════════════════════════════════════════
   //  面板 & 全屏
@@ -233,6 +271,7 @@
     document.querySelectorAll('.ratio-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.ratio === ratio)
     );
+    updateDeckScale();
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -348,6 +387,7 @@
     loadSaved();
     applyTheme(localStorage.getItem('pres-theme') || 'dawn');
     document.body.dataset.transition = localStorage.getItem('pres-transition') || 'slide';
+    updateDeckScale();
     setPanel(true);
     // 记录初始状态
     addHistory('初始状态');
@@ -371,8 +411,14 @@
     // Ctrl/Cmd + S → save
     if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAll(); return; }
     if (e.target.isContentEditable) return;
-    // Esc → 退出编辑模式（演示模式不支持 E 键重新进入）
+    // Esc → 退出编辑模式
     if (e.key === 'Escape' && editMode) { setPanel(false); return; }
+    // E → 切换编辑面板
+    if ((e.key === 'e' || e.key === 'E') && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      e.preventDefault();
+      setPanel(!editMode);
+      return;
+    }
   });
 
   // 文字编辑：防抖后记录历史
