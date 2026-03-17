@@ -221,10 +221,11 @@ body.edit-mode .slide.active *:not(.edit-selected) { cursor: grab; }
   box-shadow: 0 0 0 1px rgba(255,255,255,0.35);
 }
 
-/* 多选时其他元素的边框（无 overlay 手柄）*/
-body.edit-mode .slide.active .edit-selected:not(:only-of-type) {
+/* 多选时所有选中元素显示 accent 边框 */
+body.edit-mode.multi-select .slide.active .edit-selected {
   outline: 2px solid var(--accent, #c05530) !important;
   outline-offset: 2px;
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.4);
 }
 /* 右下角：等比缩放 */
 .sel-resize {
