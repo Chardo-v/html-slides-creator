@@ -132,6 +132,7 @@
     selTarget = el;
     selTargets.add(el);
     el.classList.add('edit-selected');
+    document.body.classList.remove('multi-select');
     positionOv();
     ov.style.display = 'block';
   }
@@ -141,8 +142,11 @@
     elements.forEach(el => { el.classList.add('edit-selected'); selTargets.add(el); });
     if (selTargets.size === 1) {
       selTarget = elements[0];
+      document.body.classList.remove('multi-select');
       positionOv();
       ov.style.display = 'block';
+    } else if (selTargets.size > 1) {
+      document.body.classList.add('multi-select');
     }
   }
 
@@ -151,6 +155,28 @@
     selTargets.clear();
     selTarget = null;
     ov.style.display = 'none';
+    document.body.classList.remove('multi-select');
+  }
+
+  // Cmd/Ctrl + 单击：切换该元素的选中状态
+  function toggleSelect(el) {
+    if (selTargets.has(el)) {
+      el.classList.remove('edit-selected');
+      selTargets.delete(el);
+      if (selTargets.size === 0) {
+        deselect();
+      } else if (selTargets.size === 1) {
+        selTarget = [...selTargets][0];
+        document.body.classList.remove('multi-select');
+        positionOv();
+        ov.style.display = 'block';
+      }
+    } else {
+      if (selTarget) { ov.style.display = 'none'; selTarget = null; }
+      el.classList.add('edit-selected');
+      selTargets.add(el);
+      document.body.classList.add('multi-select');
+    }
   }
 
   const LAYOUT_CLS = [
@@ -263,6 +289,12 @@
       Object.assign(marqueeEl.style, { left: e.clientX + 'px', top: e.clientY + 'px', width: '0', height: '0', display: 'block' });
       return;
     }
+    // Cmd/Ctrl + 单击 → 切换多选
+    if (e.metaKey || e.ctrlKey) {
+      e.preventDefault();
+      toggleSelect(target);
+      return;
+    }
     // 点击已选中的元素 → 直接进入组合移动；否则先单选
     if (!selTargets.has(target)) selectEl(target);
     // 记录所有选中元素的初始 transform，用于组合移动
@@ -349,16 +381,15 @@
     if (edgeDrag)   { edgeDrag   = null; if (selTarget) addHistory(`拉伸 第${cur+1}页`); }
     if (marqueeDrag) {
       marqueeEl.style.display = 'none';
-      const mr = marqueeEl.getBoundingClientRect();
+      const mx1 = Math.min(e.clientX, marqueeDrag.startX);
+      const my1 = Math.min(e.clientY, marqueeDrag.startY);
+      const mx2 = Math.max(e.clientX, marqueeDrag.startX);
+      const my2 = Math.max(e.clientY, marqueeDrag.startY);
       // 只有拖出了一定面积才执行框选
-      if (mr.width > 4 && mr.height > 4) {
-        const mx1 = Math.min(e.clientX, marqueeDrag.startX);
-        const my1 = Math.min(e.clientY, marqueeDrag.startY);
-        const mx2 = Math.max(e.clientX, marqueeDrag.startX);
-        const my2 = Math.max(e.clientY, marqueeDrag.startY);
+      if (mx2 - mx1 > 4 && my2 - my1 > 4) {
         const hits = getAllSelectableElements(marqueeDrag.slide).filter(el => {
           const r = el.getBoundingClientRect();
-          return r.left < mx2 && r.right > mx1 && r.top < my2 && r.bottom > my1;
+          return r.left >= mx1 && r.right <= mx2 && r.top >= my1 && r.bottom <= my2;
         });
         selectMultiple(hits);
       }
