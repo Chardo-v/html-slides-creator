@@ -69,7 +69,10 @@
   let pendingDrag = null;       // 等待判断是点击还是拖拽
   let marqueeDrag = null;       // 框选拖拽
 
-  const DRAG_THRESHOLD = 6; // px，超过此距离才判定为拖拽
+  const DRAG_THRESHOLD = 6;    // px，超过此距离才判定为拖拽
+  const MIN_SCALE      = 0.05; // 元素最小缩放倍数
+  const MIN_EL_W       = 20;   // 元素最小宽度 px
+  const MIN_EL_H       = 10;   // 元素最小高度 px
 
   // 框选矩形
   const marqueeEl = document.createElement('div');
@@ -302,62 +305,59 @@
     pendingDrag = { group, primary: target, startX: e.clientX, startY: e.clientY, isDragging: false };
   });
 
-  document.addEventListener('mousemove', e => {
-    // 等比缩放（右下角）
-    if (resizeDrag && selTarget) {
-      const dist      = Math.hypot(e.clientX - resizeDrag.cx, e.clientY - resizeDrag.cy);
-      const startDist = Math.hypot(resizeDrag.startX - resizeDrag.cx, resizeDrag.startY - resizeDrag.cy);
-      const factor    = dist / Math.max(startDist, 1);
-      const newSx     = Math.max(0.05, resizeDrag.startSx * factor);
-      const newSy     = Math.max(0.05, resizeDrag.startSy * factor);
-      setTransform(selTarget, resizeDrag.tx, resizeDrag.ty, resizeDrag.rot, newSx, newSy);
-      positionOv();
-      return;
+  // ── 各拖拽模式的处理函数 ──
+
+  function handleResizeDrag(e) {
+    const dist      = Math.hypot(e.clientX - resizeDrag.cx, e.clientY - resizeDrag.cy);
+    const startDist = Math.hypot(resizeDrag.startX - resizeDrag.cx, resizeDrag.startY - resizeDrag.cy);
+    const factor    = dist / Math.max(startDist, 1);
+    const newSx     = Math.max(MIN_SCALE, resizeDrag.startSx * factor);
+    const newSy     = Math.max(MIN_SCALE, resizeDrag.startSy * factor);
+    setTransform(selTarget, resizeDrag.tx, resizeDrag.ty, resizeDrag.rot, newSx, newSy);
+    positionOv();
+  }
+
+  function handleRotateDrag(e) {
+    const angle = Math.atan2(e.clientY - rotateDrag.cy, e.clientX - rotateDrag.cx) * 180 / Math.PI;
+    const rot   = rotateDrag.startRot + (angle - rotateDrag.startAngle);
+    setTransform(selTarget, rotateDrag.tx, rotateDrag.ty, rot, rotateDrag.sx, rotateDrag.sy);
+    positionOv();
+  }
+
+  function handleEdgeDrag(e) {
+    const dx  = e.clientX - edgeDrag.startX;
+    const dy  = e.clientY - edgeDrag.startY;
+    const ds  = getDeckScale();
+    // 将屏幕位移投影到元素本地坐标系（补偿旋转）
+    const rad = edgeDrag.rot * Math.PI / 180;
+    const lx  = ( dx * Math.cos(rad) + dy * Math.sin(rad)) / ds;
+    const ly  = (-dx * Math.sin(rad) + dy * Math.cos(rad)) / ds;
+    let sx = edgeDrag.startSx, sy = edgeDrag.startSy;
+    if (edgeDrag.dir === 'l' || edgeDrag.dir === 'r') {
+      const sign  = edgeDrag.dir === 'r' ? 1 : -1;
+      const newW  = Math.max(MIN_EL_W, edgeDrag.naturalW * edgeDrag.startSx + sign * lx * 2);
+      sx = newW / edgeDrag.naturalW;
+    } else {
+      const sign  = edgeDrag.dir === 'b' ? 1 : -1;
+      const newH  = Math.max(MIN_EL_H, edgeDrag.naturalH * edgeDrag.startSy + sign * ly * 2);
+      sy = newH / edgeDrag.naturalH;
     }
-    // 旋转（左下角）
-    if (rotateDrag && selTarget) {
-      const angle = Math.atan2(e.clientY - rotateDrag.cy, e.clientX - rotateDrag.cx) * 180 / Math.PI;
-      const rot   = rotateDrag.startRot + (angle - rotateDrag.startAngle);
-      setTransform(selTarget, rotateDrag.tx, rotateDrag.ty, rot, rotateDrag.sx, rotateDrag.sy);
-      positionOv();
-      return;
-    }
-    // 边缘拉伸
-    if (edgeDrag && selTarget) {
-      const dx  = e.clientX - edgeDrag.startX;
-      const dy  = e.clientY - edgeDrag.startY;
-      const ds  = getDeckScale();
-      // 将屏幕位移投影到元素本地坐标系（补偿旋转）
-      const rad = edgeDrag.rot * Math.PI / 180;
-      const lx  = ( dx * Math.cos(rad) + dy * Math.sin(rad)) / ds;
-      const ly  = (-dx * Math.sin(rad) + dy * Math.cos(rad)) / ds;
-      let sx = edgeDrag.startSx, sy = edgeDrag.startSy;
-      if (edgeDrag.dir === 'l' || edgeDrag.dir === 'r') {
-        const sign  = edgeDrag.dir === 'r' ? 1 : -1;
-        const newW  = Math.max(20, edgeDrag.naturalW * edgeDrag.startSx + sign * lx * 2);
-        sx = newW / edgeDrag.naturalW;
-      } else {
-        const sign  = edgeDrag.dir === 'b' ? 1 : -1;
-        const newH  = Math.max(10, edgeDrag.naturalH * edgeDrag.startSy + sign * ly * 2);
-        sy = newH / edgeDrag.naturalH;
-      }
-      setTransform(selTarget, edgeDrag.tx, edgeDrag.ty, edgeDrag.rot, sx, sy);
-      positionOv();
-      return;
-    }
-    // 框选绘制
-    if (marqueeDrag) {
-      window.getSelection()?.removeAllRanges();
-      const x = Math.min(e.clientX, marqueeDrag.startX);
-      const y = Math.min(e.clientY, marqueeDrag.startY);
-      Object.assign(marqueeEl.style, {
-        left: x + 'px', top: y + 'px',
-        width:  Math.abs(e.clientX - marqueeDrag.startX) + 'px',
-        height: Math.abs(e.clientY - marqueeDrag.startY) + 'px',
-      });
-      return;
-    }
-    // 移动拖拽（支持组合移动）
+    setTransform(selTarget, edgeDrag.tx, edgeDrag.ty, edgeDrag.rot, sx, sy);
+    positionOv();
+  }
+
+  function handleMarqueeDraw(e) {
+    window.getSelection()?.removeAllRanges();
+    const x = Math.min(e.clientX, marqueeDrag.startX);
+    const y = Math.min(e.clientY, marqueeDrag.startY);
+    Object.assign(marqueeEl.style, {
+      left: x + 'px', top: y + 'px',
+      width:  Math.abs(e.clientX - marqueeDrag.startX) + 'px',
+      height: Math.abs(e.clientY - marqueeDrag.startY) + 'px',
+    });
+  }
+
+  function handleMoveDrag(e) {
     if (!pendingDrag) return;
     const dx = e.clientX - pendingDrag.startX;
     const dy = e.clientY - pendingDrag.startY;
@@ -373,6 +373,14 @@
       });
       if (selTarget) positionOv();
     }
+  }
+
+  document.addEventListener('mousemove', e => {
+    if (resizeDrag && selTarget) return handleResizeDrag(e);
+    if (rotateDrag && selTarget) return handleRotateDrag(e);
+    if (edgeDrag   && selTarget) return handleEdgeDrag(e);
+    if (marqueeDrag)             return handleMarqueeDraw(e);
+    handleMoveDrag(e);
   });
 
   document.addEventListener('mouseup', e => {
@@ -540,12 +548,18 @@
 
   function resetCurrent() {
     localStorage.removeItem(`pres-slide-${cur}`);
-    fetch(SLIDES[cur]).then(r => r.text()).then(html => {
-      document.querySelectorAll('.slide')[cur].innerHTML = html;
-      deselect();
-      addHistory(`重置 第${cur+1}页`);
-      toast('已重置');
-    });
+    fetch(SLIDES[cur])
+      .then(r => r.text())
+      .then(html => {
+        document.querySelectorAll('.slide')[cur].innerHTML = html;
+        deselect();
+        addHistory(`重置 第${cur+1}页`);
+        toast('已重置');
+      })
+      .catch(err => {
+        console.error('重置失败:', err);
+        toast('重置失败 ✗');
+      });
   }
 
   function loadSaved() {

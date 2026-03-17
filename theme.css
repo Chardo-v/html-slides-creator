@@ -196,10 +196,14 @@ ul.item-list li::before { content: '›'; color: var(--accent); font-size: 1.3re
 .grid-3 { grid-template-columns: repeat(3, 1fr); }
 .grid-2 { grid-template-columns: repeat(2, 1fr); }
 
-.card {
+/* ── 玻璃卡片通用基础：所有卡片类共享的毛玻璃三件套 ── */
+.card, .step, .compare-box, .stat-card, .mini-stat, .chart-wrap, .img-frame {
   background: var(--surface);
   backdrop-filter: blur(20px);
   border: 1px solid var(--border);
+}
+
+.card {
   border-radius: 12px;
   padding: 24px 20px;
   transition: border-color 0.2s;
@@ -266,9 +270,6 @@ ul.item-list li::before { content: '›'; color: var(--accent); font-size: 1.3re
   align-items: flex-start;
   gap: 20px;
   padding: 20px;
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
   border-radius: 10px;
 }
 .step-num {
@@ -293,9 +294,6 @@ ul.item-list li::before { content: '›'; color: var(--accent); font-size: 1.3re
 /* 比较表 */
 .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 1.5rem; }
 .compare-box {
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
   border-radius: 10px;
   padding: 24px;
 }
@@ -408,9 +406,6 @@ ul.item-list li::before { content: '›'; color: var(--accent); font-size: 1.3re
   aspect-ratio: 4/3;
   border-radius: 16px;
   overflow: hidden;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -433,15 +428,12 @@ ul.item-list li::before { content: '›'; color: var(--accent); font-size: 1.3re
   margin-top: 2rem;
 }
 .stat-card {
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 36px 24px;
   text-align: center;
 }
 .stat-big   { font-size: 3.8rem; font-weight: 800; color: var(--accent); line-height: 1; }
-.stat-label { font-size: 0.9rem; color: var(--muted); margin-top: 10px; }
+.stat-card .stat-label { margin-top: 10px; } /* stat-card 内需要更大间距 */
 
 /* ── 时间线 ── */
 .layout-timeline {
@@ -586,9 +578,6 @@ ul.item-list li::before { content: '›'; color: var(--accent); font-size: 1.3re
   gap: 10px;
 }
 .mini-stat {
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 10px;
   text-align: center;
@@ -598,9 +587,6 @@ ul.item-list li::before { content: '›'; color: var(--accent); font-size: 1.3re
 
 /* 图表容器 */
 .chart-wrap {
-  background: var(--surface);
-  backdrop-filter: blur(20px);
-  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px 16px;
   flex: 1;

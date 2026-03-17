@@ -3,6 +3,7 @@
 //  修改此处后刷新页面生效；不建议使用编辑面板的滑条代替
 // ═══════════════════════════════════════════════════
 const GLOBAL_CONFIG = {
+  title:       'Claude & Codex 培训',  // 浏览器标题和演示文稿名称
   aspectRatio: '16:9',  // 页面比例: '16:9' | '4:3' | '1:1' | '21:9'
   vPad:        64,      // 内容纵向边距（px）
   hPad:        100,     // 内容横向边距（px）
@@ -18,7 +19,6 @@ const SLIDES = [
   'slides/05-use-cases/slide.html',
   'slides/06-start/slide.html',
   'slides/07-quote-demo/slide.html',
-  // ── 扩展演示 ──────────────────────────────
   'slides/08-image-demo/slide.html',   // 图文混排
   'slides/09-table-demo/slide.html',   // 数据表格
   'slides/10-code-styles/slide.html',  // 多语言代码块
