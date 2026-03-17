@@ -203,6 +203,15 @@ body.edit-mode .slide.active .edit-selected { outline: none !important; }
 body.edit-mode .slide.active { cursor: grab; }
 body.edit-mode .slide.active *:not(.edit-selected) { cursor: grab; }
 
+/* 框选矩形 */
+#sel-marquee {
+  position: fixed; display: none; z-index: 490;
+  border: 1.5px dashed var(--accent, #c05530);
+  background: rgba(192, 85, 48, 0.07);
+  pointer-events: none;
+  border-radius: 2px;
+}
+
 /* 选中覆盖层 */
 #sel-overlay {
   position: fixed; display: none; z-index: 500;
@@ -210,6 +219,12 @@ body.edit-mode .slide.active *:not(.edit-selected) { cursor: grab; }
   border: 2px solid var(--accent, #c05530);
   border-radius: 3px;
   box-shadow: 0 0 0 1px rgba(255,255,255,0.35);
+}
+
+/* 多选时其他元素的边框（无 overlay 手柄）*/
+body.edit-mode .slide.active .edit-selected:not(:only-of-type) {
+  outline: 2px solid var(--accent, #c05530) !important;
+  outline-offset: 2px;
 }
 /* 右下角：等比缩放 */
 .sel-resize {

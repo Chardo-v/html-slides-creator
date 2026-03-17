@@ -64,10 +64,17 @@
   // ═══════════════════════════════════════════════════════════
   //  自然拖拽 & 缩放（无手柄，直接按住元素移动）
   // ═══════════════════════════════════════════════════════════
-  let selTarget   = null;
-  let pendingDrag = null;  // 等待判断是点击还是拖拽
+  let selTarget   = null;       // 单选目标（有 overlay 手柄）
+  let selTargets  = new Set();  // 全部已选元素
+  let pendingDrag = null;       // 等待判断是点击还是拖拽
+  let marqueeDrag = null;       // 框选拖拽
 
   const DRAG_THRESHOLD = 6; // px，超过此距离才判定为拖拽
+
+  // 框选矩形
+  const marqueeEl = document.createElement('div');
+  marqueeEl.id = 'sel-marquee';
+  document.body.appendChild(marqueeEl);
 
   // 选中覆盖层：右下角缩放、左下角旋转、四边拉伸、右上角重置
   const ov = document.createElement('div');
@@ -121,15 +128,27 @@
   }
 
   function selectEl(el) {
-    if (selTarget) selTarget.classList.remove('edit-selected');
+    deselect();
     selTarget = el;
+    selTargets.add(el);
     el.classList.add('edit-selected');
     positionOv();
     ov.style.display = 'block';
   }
 
+  function selectMultiple(elements) {
+    deselect();
+    elements.forEach(el => { el.classList.add('edit-selected'); selTargets.add(el); });
+    if (selTargets.size === 1) {
+      selTarget = elements[0];
+      positionOv();
+      ov.style.display = 'block';
+    }
+  }
+
   function deselect() {
-    if (selTarget) selTarget.classList.remove('edit-selected');
+    selTargets.forEach(el => el.classList.remove('edit-selected'));
+    selTargets.clear();
     selTarget = null;
     ov.style.display = 'none';
   }
@@ -151,6 +170,20 @@
       el = p;
     }
     return null;
+  }
+
+  // 遍历 slide，收集所有可选中的叶子元素（与 findSelectable 逻辑一致）
+  function getAllSelectableElements(slide) {
+    const isLayout = el => LAYOUT_CLS.some(s => el.matches(s));
+    const result = [];
+    function walk(parent) {
+      for (const child of parent.children) {
+        if (isLayout(child)) { walk(child); }
+        else if (parent === slide || isLayout(parent)) { result.push(child); }
+      }
+    }
+    walk(slide);
+    return result;
   }
 
   // ── 右下角：等比缩放 ──
@@ -206,18 +239,25 @@
     addHistory(`重置 第${cur+1}页 ${selTarget.tagName.toLowerCase()}`);
   });
 
-  // 点击幻灯片内元素 → 标记 pendingDrag
+  // 点击幻灯片内元素 → 标记 pendingDrag；点击背景 → 启动框选
   document.addEventListener('mousedown', e => {
     if (!editMode) return;
     if (e.target.closest('#sel-overlay') || e.target.closest('#panel') || e.target.closest('#btn-edit')) return;
     const slide = document.querySelector('.slide.active');
     if (!slide || !slide.contains(e.target)) { deselect(); return; }
     const target = findSelectable(e.target, slide);
-    if (!target) return;
-    if (target !== selTarget) selectEl(target);
-    const { tx, ty, rot, sx, sy } = getTransform(target);
-    pendingDrag = { el: target, startX: e.clientX, startY: e.clientY,
-                    startTx: tx, startTy: ty, rot, sx, sy, isDragging: false };
+    if (!target) {
+      // 点击背景 → 启动框选
+      deselect();
+      marqueeDrag = { startX: e.clientX, startY: e.clientY, slide };
+      Object.assign(marqueeEl.style, { left: e.clientX + 'px', top: e.clientY + 'px', width: '0', height: '0', display: 'block' });
+      return;
+    }
+    // 点击已选中的元素 → 直接进入组合移动；否则先单选
+    if (!selTargets.has(target)) selectEl(target);
+    // 记录所有选中元素的初始 transform，用于组合移动
+    const group = [...selTargets].map(el => ({ el, ...getTransform(el) }));
+    pendingDrag = { group, primary: target, startX: e.clientX, startY: e.clientY, isDragging: false };
   });
 
   document.addEventListener('mousemove', e => {
@@ -263,7 +303,18 @@
       positionOv();
       return;
     }
-    // 移动拖拽
+    // 框选绘制
+    if (marqueeDrag) {
+      const x = Math.min(e.clientX, marqueeDrag.startX);
+      const y = Math.min(e.clientY, marqueeDrag.startY);
+      Object.assign(marqueeEl.style, {
+        left: x + 'px', top: y + 'px',
+        width:  Math.abs(e.clientX - marqueeDrag.startX) + 'px',
+        height: Math.abs(e.clientY - marqueeDrag.startY) + 'px',
+      });
+      return;
+    }
+    // 移动拖拽（支持组合移动）
     if (!pendingDrag) return;
     const dx = e.clientX - pendingDrag.startX;
     const dy = e.clientY - pendingDrag.startY;
@@ -274,19 +325,36 @@
     }
     if (pendingDrag.isDragging) {
       const ds = getDeckScale();
-      setTransform(pendingDrag.el,
-        pendingDrag.startTx + dx / ds, pendingDrag.startTy + dy / ds,
-        pendingDrag.rot, pendingDrag.sx, pendingDrag.sy);
-      positionOv();
+      pendingDrag.group.forEach(({ el, tx, ty, rot, sx, sy }) => {
+        setTransform(el, tx + dx / ds, ty + dy / ds, rot, sx, sy);
+      });
+      if (selTarget) positionOv();
     }
   });
 
-  document.addEventListener('mouseup', () => {
+  document.addEventListener('mouseup', e => {
     if (resizeDrag) { resizeDrag = null; if (selTarget) addHistory(`缩放 第${cur+1}页`); }
     if (rotateDrag) { rotateDrag = null; if (selTarget) addHistory(`旋转 第${cur+1}页`); }
     if (edgeDrag)   { edgeDrag   = null; if (selTarget) addHistory(`拉伸 第${cur+1}页`); }
+    if (marqueeDrag) {
+      marqueeEl.style.display = 'none';
+      const mr = marqueeEl.getBoundingClientRect();
+      // 只有拖出了一定面积才执行框选
+      if (mr.width > 4 && mr.height > 4) {
+        const mx1 = Math.min(e.clientX, marqueeDrag.startX);
+        const my1 = Math.min(e.clientY, marqueeDrag.startY);
+        const mx2 = Math.max(e.clientX, marqueeDrag.startX);
+        const my2 = Math.max(e.clientY, marqueeDrag.startY);
+        const hits = getAllSelectableElements(marqueeDrag.slide).filter(el => {
+          const r = el.getBoundingClientRect();
+          return r.left < mx2 && r.right > mx1 && r.top < my2 && r.bottom > my1;
+        });
+        selectMultiple(hits);
+      }
+      marqueeDrag = null;
+    }
     if (pendingDrag) {
-      if (pendingDrag.isDragging) addHistory(`移动 第${cur+1}页 ${pendingDrag.el.tagName.toLowerCase()}`);
+      if (pendingDrag.isDragging) addHistory(`移动 第${cur+1}页`);
       pendingDrag = null;
     }
   });
