@@ -247,7 +247,8 @@
     if (!slide || !slide.contains(e.target)) { deselect(); return; }
     const target = findSelectable(e.target, slide);
     if (!target) {
-      // 点击背景 → 启动框选
+      // 点击背景 → 启动框选，阻止 contentEditable 的原生文字选中
+      e.preventDefault();
       deselect();
       marqueeDrag = { startX: e.clientX, startY: e.clientY, slide };
       Object.assign(marqueeEl.style, { left: e.clientX + 'px', top: e.clientY + 'px', width: '0', height: '0', display: 'block' });
@@ -305,6 +306,7 @@
     }
     // 框选绘制
     if (marqueeDrag) {
+      window.getSelection()?.removeAllRanges();
       const x = Math.min(e.clientX, marqueeDrag.startX);
       const y = Math.min(e.clientY, marqueeDrag.startY);
       Object.assign(marqueeEl.style, {
