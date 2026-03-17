@@ -154,9 +154,18 @@
   }
 
   const LAYOUT_CLS = [
-    '.slide-content', '.slide-center', '.layout-hero', '.layout-quote',
-    '.layout-image-right', '.layout-image-left', '.layout-stats', '.layout-timeline',
-    '.col', '.col-wide', '.grid', '.stats-row', '.steps', '.compare', '.timeline',
+    // 顶层布局容器
+    '.slide-content', '.slide-center',
+    '.layout-hero', '.layout-quote',
+    '.layout-image-right', '.layout-image-left',
+    '.layout-stats', '.layout-timeline',
+    '.layout-dashboard',
+    // 列 / 分区容器
+    '.col', '.col-wide', '.two-col',
+    '.text-col', '.img-col',
+    '.dashboard-header', '.dashboard-body', '.dashboard-right', '.dashboard-stats',
+    // 内容组容器
+    '.grid', '.stats-row', '.steps', '.compare', '.timeline',
   ];
   function findSelectable(target, slide) {
     let el = target;
