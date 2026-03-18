@@ -97,6 +97,9 @@ body {
   user-select: none;
 }
 
+/* 允许用户选中幻灯片内的文字（需同时覆盖 -webkit 前缀，否则 Safari/Chrome macOS 不生效） */
+.background { -webkit-user-select: text; user-select: text; }
+
 /* ── 幻灯片容器（尺寸由 #stage + aspect-ratio 决定，见 editor.css）── */
 #deck { position: relative; }
 

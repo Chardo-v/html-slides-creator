@@ -1,121 +1,117 @@
 ---
 name: html-slides-creator
 description: >
-  用于在 html-slides-creator 框架中创建、修改和运行 HTML 幻灯片。当用户说
-  "帮我做一页 PPT / 幻灯片"、"加一张关于 X 的页面"、"新建介绍 Y 的 slide"、
-  "给演示文稿添加内容"、"修改某一页"、"帮我做一套演示"或"启动 slides 预览"
-  时，必须使用本 skill。只要用户在此项目里提到"幻灯片"、"slide"、"PPT"、
-  "演示页"，就应激活本 skill。
+  用于在 html-slides-creator 框架中创建和修改 HTML 幻灯片演示。只要用户提到
+  "幻灯片"、"slide"、"PPT"、"演示"、"做一套介绍"、"加一页"、"启动预览"，就应使用本 skill。
 ---
 
 # html-slides-creator
 
-使用本 skill 时，先定位当前 `SKILL.md` 所在目录，记为 `skill_root`。不要假设当前环境是 Codex 还是 Claude Code，也不要硬编码 `~/.codex/skills` 或 `~/.claude/skills`；一律相对 `SKILL.md` 自己定位。
+使用本 skill 前，先按以下规则确定 `skill_root`：
 
-## 目录约定
+- **普通模式**：`skill_root` = `SKILL.md` 所在目录（默认）。
+- **开发者模式**：`skill_root` = 当前工作目录下的 `html-slides-creator/` 子目录。
 
-本仓库本身就是 skill，目录固定如下：
+**何时进入开发者模式**（满足任一即建议/进入）：
+- 用户明确提到"开发者模式"或"developer mode"
+- 用户提到 slides 框架本身有 bug（网页显示异常、服务器报错等）
+- 当前工作目录已存在 `html-slides-creator/` 且其中有 `scripts/server.py`
+
+**进入开发者模式的步骤**：将 skill 完整复制到当前工作目录：
+
+```bash
+# Claude 环境用：
+cp -r ~/.claude/skills/html-slides-creator .
+# Codex 环境则用：
+cp -r ~/.codex/skills/html-slides-creator .
+```
+
+之后所有修改都在当前目录的 `html-slides-creator/` 中进行，不影响已安装的 skill。
+
+目录结构固定如下：
 
 ```text
 skill_root/
 ├── SKILL.md
 ├── scripts/
-│   └── server.py
+│   ├── server.py            # 开发服务器
+│   └── run_slides.py        # 启动脚本模板（需复制到用户 slides 目录）
 └── assets/
-    ├── runtime/
-    └── examples/
+    ├── runtime/             # 框架运行时（勿修改）
+    └── example-slides/      # 布局参考示例
 ```
 
-含义如下：
-
-- `scripts/server.py`：运行时开发服务器，负责提供框架页面并挂载某个 slides 文件夹。
-- `assets/runtime/`：框架运行时代码，不要把用户自己的演示内容写进这里。
-- `assets/examples/example-slides/`：内置示例，仅作参考。
-
-## 开始前必须确认
-
-1. 运行时框架位于 `skill_root/assets/runtime/`。
-2. 启动服务脚本位于 `skill_root/scripts/server.py`。
-3. 当前演示内容必须放在用户自己的 slides 文件夹中，不要写进 skill 仓库。
-4. 必须在这个 slides 文件夹内生成一个 `.py` 启动脚本，由它调用 `skill_root/scripts/server.py <当前 slides 文件夹路径>`。
-
-> 自动刷新：保存 HTML 文件后，浏览器会在 2.5s 内自动检测变化并刷新对应页面。
+> 自动刷新：保存 HTML 后浏览器在 2.5s 内自动刷新对应页面。
 
 ## 标准工作流
 
-1. 先看 `skill_root/assets/examples/example-slides/`，按现有示例选择布局。
-2. 在用户项目里创建一个独立的 slides 文件夹，例如：
-
-```text
-some-project/my-topic-slides/
-```
-
-3. 在这个 slides 文件夹里生成以下文件：
-
-- `slides.js`
-- `NN-name.html` 若干
-- `slides.history.json`（可由编辑器自动生成）
-- 一个启动用 `.py` 文件，例如 `run_slides.py`
-
-4. 这个启动用 `.py` 文件必须调用：
-
-```text
-skill_root/scripts/server.py
-```
-
-并把“当前 slides 文件夹路径”作为参数传给它。
-
-## 启动脚本要求
-
-每次新建演示时，都要在该演示目录内生成一个 `.py` 启动脚本。这个脚本的职责只有两件事：
-
-1. 定位当前文件所在目录，把它当作 slides 根目录。
-2. 调用 `skill_root/scripts/server.py <当前目录>`。
-
-不要要求用户手动切到 skill 仓库再敲命令；默认直接运行演示目录里的这个 `.py` 文件即可启动预览。可参考 `skill_root/assets/examples/example-slides/run_slides.py`。
-
-## slides 文件夹约定
-
-一个演示目录通常长这样：
+在用户项目里创建一个独立 slides 文件夹，结构如下：
 
 ```text
 my-topic-slides/
-├── run_slides.py
-├── slides.js
-├── slides.history.json
+├── run_slides.py          # 从 scripts/run_slides.py 复制而来（见下方说明）
+├── slides.js              # 幻灯片列表
+├── slides.history.json    # 该文件由框架自动维护。**禁止**读取或修改该文件。
 ├── 01-cover.html
 ├── 02-agenda.html
 └── ...
 ```
 
-`slides.js` 里的 `SLIDES` 建议写文件名本身，例如：
+**启动脚本**：把 `scripts/run_slides.py` 复制到 slides 文件夹，并把其中
+`SKILL_ROOT` 的值替换为本 skill 的实际绝对路径（即 `SKILL.md` 所在目录），例如：
+
+```python
+SKILL_ROOT = Path("/Users/alice/.claude/skills/html-slides-creator")
+```
+
+用户直接在 slides 文件夹里执行这个 `.py` 文件即可启动预览，无需手动切换目录。
+
+**`slides.js` 格式**（`GLOBAL_CONFIG` 和 `SLIDES` 两个对象缺一不可，运行时均依赖它们）：
 
 ```js
+const GLOBAL_CONFIG = {
+  title:        '演示文稿标题',   // 浏览器标题
+  aspectRatio:  '16:9',           // '16:9' | '4:3' | '1:1' | '21:9'
+  vPad:         64,               // 纵向边距（px）
+  hPad:         100,              // 横向边距（px）
+  baseFontSize: 16,               // 基础字号（px）
+};
+
 const SLIDES = [
   '01-cover.html',
   '02-agenda.html',
 ];
 ```
 
-不要写死 `example-slides/...`。运行时会自动把这些路径解释为当前 slides 文件夹中的文件。
+先浏览 `assets/example-slides/` 选择合适布局，再开始编写 HTML。
 
-## 关键约束
+## Slide HTML 约束
 
-- **不能含** `<html>` `<head>` `<body>` `<script>` `<style>` 标签，内容直接被 `innerHTML` 插入。
-- **最外层必须是单个 `<div>`**，带布局类。
-- **颜色全部用 CSS 变量**（`var(--accent)` 等），禁止硬编码色值。
+每张 slide 是一个 HTML 片段，被框架以 `innerHTML` 插入，因此：
+
+- **禁止** `<html>`、`<head>`、`<body>`、`<script>`、`<style>` 标签
+- **最外层必须是单个 `<div>`**，带布局类
+- **颜色全部用 CSS 变量**，禁止硬编码色值
+
+引用 slides 目录内的图片等资源用 `/slides/...` 路径：
+
+```html
+<img src="/slides/assets/cover.png" alt="">
+```
 
 ## 布局参考
 
-| 布局类 | 最适合 | 参考文件 |
-|--------|--------|---------|
-| `.layout-cover` | 封面页 | `skill_root/assets/examples/example-slides/01-cover.html` |
-| `.slide-content` | 通用内容页（最常用） | `skill_root/assets/examples/example-slides/02-agenda.html`, `skill_root/assets/examples/example-slides/04-bullets.html` |
-| `.layout-section` | 节标题过渡页（反色大字） | `skill_root/assets/examples/example-slides/03-section.html` |
-| `.layout-image-right` | 图文说明（图在右） | `skill_root/assets/examples/example-slides/05-image-text.html` |
+示例文件均在 `assets/example-slides/`。
+
+| 布局类 | 适合场景 | 示例文件 |
+|--------|---------|---------|
+| `.layout-cover` | 封面页 | `01-cover.html` |
+| `.slide-content` | 通用内容页（最常用） | `02-agenda.html`、`04-bullets.html` |
+| `.layout-section` | 节标题过渡页（反色大字） | `03-section.html` |
+| `.layout-image-right` | 图文说明（图在右） | `05-image-text.html` |
 | `.layout-image-left` | 图文说明（图在左） | — |
-| `.layout-quote` | 金句 / 强调页 | `skill_root/assets/examples/example-slides/09-quote.html` |
-| `.layout-closing` | 结束 / Q&A 页 | `skill_root/assets/examples/example-slides/10-closing.html` |
+| `.layout-quote` | 金句 / 强调页 | `09-quote.html` |
+| `.layout-closing` | 结束 / Q&A 页 | `10-closing.html` |
 | `.slide-content.two-col` | 两列对比 | — |
 | `.layout-stats` | 关键数字统计 | — |
 | `.layout-timeline` | 时间线 / 流程 | — |
@@ -127,9 +123,9 @@ const SLIDES = [
 |------|------|
 | `.tag` | 章节分类标签，放在 `.slide-content` 顶部 |
 | `.item-list` + `<li>` | 要点列表（自动加 › 前缀） |
-| `.grid.grid-3` / `.grid-2` + `.card` | 并列功能/特性卡片 |
+| `.grid.grid-3` / `.grid-2` + `.card` | 并列功能/特性卡片；卡片内部固定用 `.card-icon`（emoji）、`.card-title`、`.card-desc` 三个子类，**禁止**在卡片内用内联 `font-size`/`font-weight` 等排版属性覆盖 |
 | `.steps` + `.step` | 有序步骤流程 |
-| `.compare` + `.compare-box` | 左右对比，右侧可加 `.highlight` |
+| `.compare` + `.compare-box` | 左右对比，右侧可加 `.highlight`；**禁止**在 `.compare-box` 内使用 `.item-list`（CSS 优先级冲突会破坏 › 对齐）；若需要带列表的左右对比，改用 `.grid.grid-2` + `.card` + `.item-list` |
 | `.stat-card` / `.stat-big` | 突出大数字 |
 | `.timeline` + `.tl-item` | 带竖线的时间线 |
 | `.agenda-list` + `.agenda-item` | 目录列表，`.active` 高亮当前项 |
@@ -153,58 +149,13 @@ const SLIDES = [
 
 ## Plotly 图表
 
-通过数据属性自动初始化，无需写 `<script>`。背景、字体、颜色由 `baseLayout()` 自动注入，`layout` 里只写需要覆盖的字段。
-
-### 方式一：数据属性
-
-```html
-<div data-plotly="bar" data-values="40,65,80" data-labels="Q1,Q2,Q3" style="flex:1;min-height:0"></div>
-<div data-plotly="pie" data-values="35,28,20" data-labels="华东,华南,华北" style="flex:1;min-height:0"></div>
-<div data-plotly="bar" data-labels="Q1,Q2,Q3"
-     data-series='[{"name":"2024","values":"40,55,70"},{"name":"2025","values":"52,68,88"}]'
-     style="flex:1;min-height:0"></div>
-```
-
-可选属性：`data-title`、`data-y-title`。
-
-### 方式二：完整 JSON 配置
-
-```html
-<div style="flex:1;min-width:0"
-     data-plotly-config='{"data":[{"type":"violin","y":[32,38,41,35,43,31,39,36],"name":"A","box":{"visible":true},"meanline":{"visible":true}}],"layout":{"showlegend":false}}'></div>
-
-<div style="flex:1;min-width:0"
-     data-plotly-config='{"data":[{"type":"barpolar","r":[38,28,22,12],"theta":["华东","华南","华北","华西"],"marker":{"color":[38,28,22,12],"colorscale":"Plasma"}}],"layout":{"polar":{"radialaxis":{"visible":false}},"showlegend":false}}'></div>
-
-<div style="flex:1;min-width:0"
-     data-plotly-config='{"data":[{"type":"sunburst","labels":["总","A","B","A1","A2"],"parents":["","总","总","A","A"],"values":[100,60,40,35,25],"branchvalues":"total"}]}'></div>
-```
-
-左右双图布局：用 `display:flex;gap:32px` 的容器包两个 `flex:1` 的图表 div。参考 `skill_root/assets/examples/example-slides/06-chart.html`。
-
-## 本地资源路径
-
-如果 slide 里要引用当前演示目录中的图片或其他资源，使用 `/slides/...` 路径，例如：
-
-```html
-<img src="/slides/assets/cover.png" alt="封面图">
-```
-
-不要写 `example-slides/...`，也不要假设运行页与 HTML 文件在同一目录。
-
-## 工作边界
-
-- 用户自己的 slide HTML、图片、数据文件、`slides.js`、`slides.history.json` 都应放在用户的 slides 文件夹中，不要写入 `assets/runtime/`。
-- 运行时框架代码优先从 `skill_root/assets/runtime/` 读取。
-- 如果需要参考现成版式，查看 `skill_root/assets/examples/example-slides/`。
-- 不要创建 `README.md` 或额外文档文件。
-
-如果用户请求的是“基于现有脚本生成演示”或“修改某一页”，先通读本 `SKILL.md`，再开始实际编辑。
+需要图表时，查阅 `assets/example-slides/06-chart.html`——文件顶部有完整的用法注释，包括数据属性写法、多系列 bar、完整 JSON 配置，以及双图布局示例。
 
 ## 质量检查
 
 - [ ] 最外层是单个 `<div>` 带布局类，无 `<html>/<head>/<body>/<script>/<style>`
-- [ ] 颜色全部使用 CSS 变量
+- [ ] 颜色全部使用 CSS 变量；**禁止**内联 `font-size`、`font-weight`、`color` 等排版属性（框架语义类已处理，内联覆盖会导致字体偏小或样式冲突）
 - [ ] 每页不超过 5 个要点或 3 个卡片
-- [ ] 文件名已加入当前 slides 文件夹中的 `slides.js` 的 `SLIDES` 数组
-- [ ] 当前 slides 文件夹内已生成一个调用 `skill_root/scripts/server.py` 的启动 `.py` 文件
+- [ ] `slides.js` 同时包含 `GLOBAL_CONFIG` 和 `SLIDES` 两个对象（缺 `GLOBAL_CONFIG` 会报 ReferenceError）
+- [ ] 文件名已加入 `slides.js` 的 `SLIDES` 数组
+- [ ] slides 文件夹内有 `run_slides.py`（`SKILL_ROOT` 已改为实际绝对路径）

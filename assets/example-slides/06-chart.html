@@ -1,3 +1,26 @@
+<!--
+  Plotly 图表使用说明
+  ===================
+  图表通过数据属性自动初始化，无需写 <script>。
+  背景、字体、颜色由 baseLayout() 自动注入，layout 里只写需要覆盖的字段。
+
+  方式一：数据属性（简单图表）
+  ─────────────────────────────
+  <div data-plotly="bar" data-values="40,65,80" data-labels="Q1,Q2,Q3" style="flex:1;min-height:0"></div>
+  <div data-plotly="pie" data-values="35,28,20" data-labels="华东,华南,华北" style="flex:1;min-height:0"></div>
+
+  多系列 bar：
+  <div data-plotly="bar" data-labels="Q1,Q2,Q3"
+       data-series='[{"name":"2024","values":"40,55,70"},{"name":"2025","values":"52,68,88"}]'
+       style="flex:1;min-height:0"></div>
+
+  可选属性：data-title、data-y-title
+
+  方式二：完整 JSON 配置（复杂图表）
+  ────────────────────────────────────
+  用 data-plotly-config 传入完整的 {data, layout}，适合 violin、barpolar、sunburst 等特殊类型。
+  左右双图布局：用 display:flex;gap:32px 的容器包两个 flex:1 的图表 div（见本文件示例）。
+-->
 <div class="slide-content background">
   <div class="tag">数据洞察</div>
   <h2>分布 · 结构双维透视</h2>

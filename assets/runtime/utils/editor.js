@@ -13,12 +13,25 @@
   // ═══════════════════════════════════════════════════════════
   //  剪贴板（复制 / 粘贴）
   // ═══════════════════════════════════════════════════════════
-  const PASTE_OFFSET = 24; // 粘贴偏移 px（幻灯片坐标系）
-  let clipboard = []; // [{ html, parent }]
+  const PASTE_OFFSET = 10; // 粘贴偏移 px（幻灯片坐标系，类 PPT 小错位）
+  let clipboard = []; // [{ html, parent, visualX, visualY, rot, sx, sy }]
 
   function copySelected() {
     if (!selTargets.size) return;
-    clipboard = [...selTargets].map(el => ({ html: el.outerHTML, parent: el.parentElement }));
+    const slide = document.querySelector('.slide.active');
+    const sr = slide ? slide.getBoundingClientRect() : { left: 0, top: 0 };
+    const ds = getDeckScale();
+    clipboard = [...selTargets].map(el => {
+      const er = el.getBoundingClientRect();
+      const { rot, sx, sy } = getTransform(el);
+      return {
+        html: el.outerHTML,
+        parent: el.parentElement,
+        visualX: (er.left - sr.left) / ds,  // 视觉位置（幻灯片坐标系）
+        visualY: (er.top  - sr.top ) / ds,
+        rot, sx, sy,
+      };
+    });
     toast(`已复制 ${clipboard.length} 个元素`);
   }
 
@@ -35,15 +48,25 @@
     if (!clipboard.length) return;
     const slide = document.querySelector('.slide.active');
     if (!slide) return;
+    const sr = slide.getBoundingClientRect();
+    const ds = getDeckScale();
     const newEls = [];
-    clipboard.forEach(({ html, parent }) => {
+    clipboard.forEach(({ html, parent, visualX, visualY, rot, sx, sy }) => {
       const wrap = document.createElement('div');
       wrap.innerHTML = html;
       const newEl = wrap.firstElementChild;
       if (!newEl) return;
-      const { tx, ty, rot, sx, sy } = getTransform(newEl);
-      setTransform(newEl, tx + PASTE_OFFSET, ty + PASTE_OFFSET, rot, sx, sy);
-      findPasteParent(slide, parent).appendChild(newEl);
+      // 先插入 DOM（无 transform），再测量自然布局位置，
+      // 再用差值让元素视觉上出现在原位 + 小错位（类 PPT）
+      newEl.style.transform = '';
+      const container = findPasteParent(slide, parent);
+      container.appendChild(newEl);
+      const er = newEl.getBoundingClientRect();
+      const naturalX = (er.left - sr.left) / ds;
+      const naturalY = (er.top  - sr.top ) / ds;
+      const targetX  = (visualX ?? naturalX) + PASTE_OFFSET;
+      const targetY  = (visualY ?? naturalY) + PASTE_OFFSET;
+      setTransform(newEl, targetX - naturalX, targetY - naturalY, rot ?? 0, sx ?? 1, sy ?? 1);
       newEls.push(newEl);
     });
     if (newEls.length) {
@@ -415,8 +438,8 @@
     }
     // 如果点击的是当前正在文字编辑的元素，放行让浏览器处理光标
     if (textEditTarget === target) return;
-    // 否则阻止默认行为（防止 contentEditable 的文本光标抢占）
-    e.preventDefault();
+    // 不再调用 e.preventDefault()：允许用户在编辑模式下选中文字。
+    // 拖动时 handleMoveDrag 会在真正移动时清除文字选区。
     exitTextEdit();
 
     // 多选状态下点击已选中的元素 → 保持多选并进入组合移动
@@ -1014,8 +1037,11 @@
     if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); toast('重做 ↪'); return; }
     // Ctrl/Cmd + S → save
     if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); saveAll(); return; }
-    // Ctrl/Cmd + C → copy selected
-    if ((e.ctrlKey || e.metaKey) && e.key === 'c' && editMode && selTargets.size) { e.preventDefault(); copySelected(); return; }
+    // Ctrl/Cmd + C → copy selected（若浏览器有文字选区，优先让浏览器处理）
+    if ((e.ctrlKey || e.metaKey) && e.key === 'c' && editMode && selTargets.size) {
+      if (window.getSelection()?.toString()) return;
+      e.preventDefault(); copySelected(); return;
+    }
     // Ctrl/Cmd + V → paste
     if ((e.ctrlKey || e.metaKey) && e.key === 'v' && editMode) { e.preventDefault(); pasteClipboard(); return; }
     if (e.target.isContentEditable) return;
