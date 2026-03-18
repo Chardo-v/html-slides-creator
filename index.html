@@ -159,6 +159,7 @@
     document.addEventListener('keydown', e => {
       if (e.target.isContentEditable) return;
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') return; // 让 editor.js 处理
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') { e.preventDefault(); window.print(); return; }
       if ([' ', 'ArrowRight', 'ArrowDown'].includes(e.key)) { e.preventDefault(); next(); }
       if (['ArrowLeft', 'ArrowUp'].includes(e.key))         { e.preventDefault(); prev(); }
     });
