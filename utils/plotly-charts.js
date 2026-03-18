@@ -185,9 +185,10 @@ const PlotlyCharts = (() => {
       const cfg    = JSON.parse(el.dataset.plotlyConfig);
       const layout = { ...baseLayout(), ...(cfg.layout || {}) };
       Plotly.newPlot(el, cfg.data || [], layout, {
+        ...(cfg.config || {}),
         responsive: true,
         displayModeBar: false,
-        ...(cfg.config || {}),
+        staticPlot: true,
       });
     } catch (e) {
       console.error('[PlotlyCharts] data-plotly-config 解析失败', e);

@@ -7,6 +7,17 @@ import http.server, sys, json, os, urllib.parse, time
 PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 3333
 BASE = os.path.dirname(os.path.abspath(__file__))
 
+def find_free_port(start):
+    import socket
+    for port in range(start, start + 100):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            try:
+                s.bind(('', port))
+                return port
+            except OSError:
+                continue
+    raise RuntimeError(f'No free port found in range {start}–{start+99}')
+
 class Handler(http.server.SimpleHTTPRequestHandler):
 
     def end_headers(self):
@@ -99,5 +110,6 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         if args and str(args[0]).startswith(('POST', 'OPTIONS')):
             print(f'[server] {fmt % args}')
 
+PORT = find_free_port(PORT)
 print(f'http://localhost:{PORT}')
 http.server.HTTPServer(('', PORT), Handler).serve_forever()

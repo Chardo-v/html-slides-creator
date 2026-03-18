@@ -788,13 +788,20 @@ ul.item-list li::before { content: '›'; color: var(--accent); font-size: 2rem;
   flex-shrink: 0;
 }
 .chart-wrap svg { flex: 1; width: 100%; height: 100%; overflow: visible; }
+.print-bg { display: none; }
 
 /* ════════════════════════════════════════════
-   打印样式 — Ctrl+P 导出全部页面为 PDF
+   打印样式 — 导出 PDF 按钮 / Ctrl+P
    @page 尺寸由 JS 动态注入，精确匹配幻灯片比例
+   beforeprint JS 钩子负责：
+     1. 将 --h-pad / --v-pad 从 px 转为 vw/vh（所见即所得）
+     2. resize 所有 Plotly 图表
 ════════════════════════════════════════════ */
 @media print {
-  #bg, #bar, #panel, #btn-edit, #toast { display: none !important; }
+  #bar, #panel, #btn-edit, #toast,
+  #sel-overlay, #sel-marquee { display: none !important; }
+
+  html[data-printing="1"] #bg { display: none !important; }
 
   /* 保留所有背景色、渐变、图片（矢量 PDF） */
   *, *::before, *::after {
@@ -802,7 +809,14 @@ ul.item-list li::before { content: '›'; color: var(--accent); font-size: 2rem;
     print-color-adjust: exact !important;
   }
 
-  body { overflow: visible; height: auto; margin: 0; padding: 0; }
+  /* 关键：1vw = 页面宽度的 1% = 1600px 逻辑像素中的 16px
+     令 1rem = 1vw，使所有 rem 字号与屏幕等比例显示 */
+  html { font-size: 1vw !important; }
+
+  body {
+    overflow: visible; height: auto; margin: 0; padding: 0;
+    background: var(--bg-base) !important;
+  }
 
   #stage {
     position: static;
@@ -820,9 +834,10 @@ ul.item-list li::before { content: '›'; color: var(--accent); font-size: 2rem;
     box-shadow: none !important;
   }
 
-  /* 每张幻灯片充满整个 @page，精确保持比例 */
+  /* 每张幻灯片充满整个 @page；背景基于 beforeprint 捕获的 blob 实际位置 */
   .slide {
     position: relative !important;
+    isolation: isolate;
     display: block !important;
     opacity: 1 !important;
     transform: none !important;
@@ -832,10 +847,39 @@ ul.item-list li::before { content: '›'; color: var(--accent); font-size: 2rem;
     break-after: page;
     overflow: hidden;
     pointer-events: none;
+    background: var(--bg-base) !important;
   }
 
   .slide:last-child {
     page-break-after: avoid;
     break-after: avoid;
+  }
+
+  .print-bg {
+    position: absolute;
+    inset: 0;
+    display: block;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .print-blob {
+    position: absolute;
+    border-radius: 50%;
+    will-change: auto;
+  }
+
+  .slide > :not(.print-bg) {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* 卡片类：打印时去掉 backdrop-filter，用不透明背景保证可见性 */
+  .card, .step, .compare-box, .stat-card, .mini-stat, .chart-wrap, .img-frame {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255,255,255,0.82) !important;
+    border: 1px solid rgba(0,0,0,0.13) !important;
   }
 }

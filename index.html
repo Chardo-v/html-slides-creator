@@ -160,30 +160,151 @@
     const next = () => cur < SLIDES.length - 1 && go(cur + 1);
     const prev = () => cur > 0 && go(cur - 1);
 
+    // ── 统一打印入口 ──────────────────────────────────────────
+    // 用于 afterprint 还原的快照列表
+    let _printSnapshots = [];
+
+    async function doPrint() {
+      syncPrintSlideBackgrounds();
+
+      // 在打印 CSS 生效之前，用 Plotly.toImage() 将每个图表转为静态 SVG 图片。
+      // 原因：打印模式下 clientWidth/offsetWidth 仍返回屏幕尺寸，
+      //       Plotly.Plots.resize() 异步完成时打印渲染已结束，无法正确缩放。
+      _printSnapshots = [];
+      if (typeof Plotly !== 'undefined') {
+        for (const el of document.querySelectorAll('[data-plotly-done]')) {
+          const r  = el.getBoundingClientRect();
+          const w  = Math.max(Math.round(r.width),  100);
+          const h  = Math.max(Math.round(r.height), 100);
+          let img = null;
+          try {
+            const url = await Plotly.toImage(el, { format: 'png', width: w, height: h });
+            img = document.createElement('img');
+            // 继承容器的 inline 样式（flex:1; min-width:0 等），再补全高度填充
+            img.style.cssText = el.style.cssText + ';min-height:0;width:100%;height:100%;display:block;';
+            img.src = url;
+            // 等待图片解码完成，确保打印时图片已可见（防止最后一张图来不及渲染）
+            try { await img.decode(); } catch (_) {}
+            el.after(img);
+          } catch (e) {
+            console.warn('[print] Plotly.toImage failed', e);
+          }
+          // 无论成功与否都隐藏原始 Plotly 元素，避免其在打印模式下渲染异常
+          el.style.display = 'none';
+          _printSnapshots.push({ el, img });
+        }
+      }
+
+      // 注入精确的 @page 尺寸（必须在 window.print() 之前生效）
+      const ratio = getComputedStyle(document.documentElement)
+        .getPropertyValue('--aspect-ratio').trim() || '16/9';
+      const [rw, rh] = ratio.split('/').map(Number);
+      const pageW = 297; // mm（A4 横向宽度）
+      const pageH = +(pageW * rh / rw).toFixed(2);
+      let ps = document.getElementById('_print_page');
+      if (!ps) { ps = document.createElement('style'); ps.id = '_print_page'; document.head.appendChild(ps); }
+      ps.textContent = `@page { size: ${pageW}mm ${pageH}mm; margin: 0; }`;
+      window.print();
+    }
+
+    function syncPrintSlideBackgrounds() {
+      const deckRect = deck.getBoundingClientRect();
+      if (!deckRect.width || !deckRect.height) return;
+
+      const blobs = [...document.querySelectorAll('#bg .blob')];
+      deck.querySelectorAll('.slide').forEach(slide => {
+        slide.querySelector('.print-bg')?.remove();
+
+        const layer = document.createElement('div');
+        layer.className = 'print-bg';
+        layer.setAttribute('aria-hidden', 'true');
+
+        blobs.forEach(blob => {
+          const rect = blob.getBoundingClientRect();
+          const cs = getComputedStyle(blob);
+          const clone = document.createElement('div');
+          clone.className = 'print-blob';
+          clone.style.left = `${(rect.left - deckRect.left) / deckRect.width * 100}%`;
+          clone.style.top = `${(rect.top - deckRect.top) / deckRect.height * 100}%`;
+          clone.style.width = `${rect.width / deckRect.width * 100}%`;
+          clone.style.height = `${rect.height / deckRect.height * 100}%`;
+          clone.style.opacity = cs.opacity;
+          clone.style.filter = cs.filter;
+          clone.style.backgroundImage = cs.backgroundImage;
+          clone.style.backgroundRepeat = 'no-repeat';
+          clone.style.backgroundPosition = 'center';
+          clone.style.backgroundSize = 'cover';
+          clone.style.borderRadius = cs.borderRadius;
+          layer.appendChild(clone);
+        });
+
+        slide.prepend(layer);
+      });
+    }
+
+    // ── beforeprint：同步背景、px 变量 → vw/vh（所见即所得），resize Plotly ──
+    window.addEventListener('beforeprint', () => {
+      syncPrintSlideBackgrounds();
+      document.documentElement.dataset.printing = '1';
+
+      const cs = getComputedStyle(document.documentElement);
+      const ratio = (cs.getPropertyValue('--aspect-ratio').trim() || '16/9');
+      const [rw, rh] = ratio.split('/').map(Number);
+      const BASE_W  = 1600;
+      const BASE_H  = BASE_W * rh / rw;
+
+      // 读取当前 px 值（由 JS applyPadding 设置的 inline style）
+      const hPx = parseFloat(cs.getPropertyValue('--h-pad')) || 100;
+      const vPx = parseFloat(cs.getPropertyValue('--v-pad')) || 64;
+      const hPct = (hPx / BASE_W * 100).toFixed(4);
+      const vPct = (vPx / BASE_H * 100).toFixed(4);
+
+      // 保存原始 px 值，afterprint 还原
+      document.documentElement.dataset.printHpad = hPx;
+      document.documentElement.dataset.printVpad = vPx;
+
+      // 转为 vw/vh：使布局与屏幕等比
+      document.documentElement.style.setProperty('--h-pad', `calc(${hPct}vw)`);
+      document.documentElement.style.setProperty('--v-pad', `calc(${vPct}vh)`);
+
+    });
+
+    // ── afterprint：还原 px 变量、Plotly 快照、恢复当前页图表 ──
+    window.addEventListener('afterprint', () => {
+      const ps = document.getElementById('_print_page');
+      if (ps) ps.remove();
+      delete document.documentElement.dataset.printing;
+
+      const hPx = parseFloat(document.documentElement.dataset.printHpad) || 100;
+      const vPx = parseFloat(document.documentElement.dataset.printVpad) || 64;
+      document.documentElement.style.setProperty('--h-pad', hPx + 'px');
+      document.documentElement.style.setProperty('--v-pad', vPx + 'px');
+
+      // 还原被替换的 Plotly 元素
+      for (const { el, img } of _printSnapshots) {
+        el.style.display = '';
+        img?.remove();
+      }
+      _printSnapshots = [];
+
+      if (typeof Plotly !== 'undefined') {
+        const active = document.querySelector('.slide.active');
+        if (active) active.querySelectorAll('[data-plotly-done]').forEach(el => {
+          try { Plotly.Plots.resize(el); } catch (_) {}
+        });
+      }
+    });
+
     document.addEventListener('keydown', e => {
       if (e.target.isContentEditable) return;
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') return; // 让 editor.js 处理
-      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
-        e.preventDefault();
-        // 读取当前比例（格式 "16/9"），计算 @page 物理尺寸
-        const ratio = getComputedStyle(document.documentElement).getPropertyValue('--aspect-ratio').trim();
-        const [rw, rh] = ratio.split('/').map(Number);
-        const pageW = 297; // mm（以 A4 横向宽度为基准）
-        const pageH = +(pageW * rh / rw).toFixed(2);
-        const s = document.createElement('style');
-        s.id = '_print_page';
-        s.textContent = `@page { size: ${pageW}mm ${pageH}mm; margin: 0; }`;
-        document.head.appendChild(s);
-        window.print();
-        window.addEventListener('afterprint', () => s.remove(), { once: true });
-        return;
-      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') { e.preventDefault(); doPrint(); return; }
       if ([' ', 'ArrowRight', 'ArrowDown'].includes(e.key)) { e.preventDefault(); next(); }
       if (['ArrowLeft', 'ArrowUp'].includes(e.key))         { e.preventDefault(); prev(); }
     });
 
-    btnExportPdf?.addEventListener('click', () => window.print());
-    btnExportPdfPanel?.addEventListener('click', () => window.print());
+    btnExportPdf?.addEventListener('click', doPrint);
+    btnExportPdfPanel?.addEventListener('click', doPrint);
 
     deck.addEventListener('click', () => {
       if (!document.body.classList.contains('edit-mode')) next();

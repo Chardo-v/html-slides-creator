@@ -359,7 +359,7 @@ body.edit-mode.multi-select .slide.active .edit-selected {
   }
 
   .slide {
-    position: static !important;
+    position: relative !important;
     inset: auto !important;
     display: block !important;
     width: 100% !important;
