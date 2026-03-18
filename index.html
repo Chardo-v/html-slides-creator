@@ -163,7 +163,21 @@
     document.addEventListener('keydown', e => {
       if (e.target.isContentEditable) return;
       if ((e.ctrlKey || e.metaKey) && e.key === 'z') return; // 让 editor.js 处理
-      if ((e.ctrlKey || e.metaKey) && e.key === 'p') { e.preventDefault(); window.print(); return; }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'p') {
+        e.preventDefault();
+        // 读取当前比例（格式 "16/9"），计算 @page 物理尺寸
+        const ratio = getComputedStyle(document.documentElement).getPropertyValue('--aspect-ratio').trim();
+        const [rw, rh] = ratio.split('/').map(Number);
+        const pageW = 297; // mm（以 A4 横向宽度为基准）
+        const pageH = +(pageW * rh / rw).toFixed(2);
+        const s = document.createElement('style');
+        s.id = '_print_page';
+        s.textContent = `@page { size: ${pageW}mm ${pageH}mm; margin: 0; }`;
+        document.head.appendChild(s);
+        window.print();
+        window.addEventListener('afterprint', () => s.remove(), { once: true });
+        return;
+      }
       if ([' ', 'ArrowRight', 'ArrowDown'].includes(e.key)) { e.preventDefault(); next(); }
       if (['ArrowLeft', 'ArrowUp'].includes(e.key))         { e.preventDefault(); prev(); }
     });
