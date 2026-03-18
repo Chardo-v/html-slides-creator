@@ -100,7 +100,7 @@
   <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
   <script src="utils/charts.js"></script>
   <script src="utils/plotly-charts.js"></script>
-  <script src="example-slides/slides.js"></script>
+  <script src="/slides/slides.js"></script>
   <script src="utils/themes.js"></script>
   <script>
     const deck    = document.getElementById('deck');
@@ -108,10 +108,19 @@
     const counter = document.getElementById('counter');
     const btnExportPdf = document.getElementById('btn-export-pdf');
     const btnExportPdfPanel = document.getElementById('btn-export-pdf-panel');
+    const SLIDES_BASE = '/slides/';
     let cur = 0;
 
     // 从配置读取标题
     document.title = GLOBAL_CONFIG.title || 'html-slides-creator';
+
+    // slides.js 中的相对路径统一指向当前挂载的 slides 目录
+    for (let i = 0; i < SLIDES.length; i++) {
+      const path = SLIDES[i];
+      if (/^(https?:)?\/\//.test(path) || path.startsWith('/')) continue;
+      const clean = path.replace(/^\.?\//, '').replace(/^slides\//, '');
+      SLIDES[i] = SLIDES_BASE + clean;
+    }
 
     // 从配置 & localStorage 应用页面比例 + 留白
     (function applyRatio() {
