@@ -5,12 +5,19 @@
   position: fixed;
   left: 0; top: 0;
   width: 100vw;
-  height: calc(100vh - var(--bar-h));
+  height: 100vh;
   overflow: hidden;
-  transition: width 0.3s ease;
+  transition: width 0.3s ease, height 0.3s ease;
+}
+/* footer 可见时让出底部空间 */
+body.bar-visible #stage {
+  height: calc(100vh - var(--bar-h));
 }
 body.edit-mode #stage {
   width: calc(100vw - 256px);
+}
+body.edit-mode #deck {
+  box-shadow: 0 4px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
 }
 
 /* Deck：固定基础宽度 1600px，通过 CSS scale 等比例适配容器 */
@@ -23,7 +30,7 @@ body.edit-mode #stage {
   transform: translate(-50%, -50%) scale(var(--deck-scale, 1));
   transform-origin: center center;
   overflow: hidden;
-  box-shadow: 0 4px 32px rgba(0,0,0,0.12), 0 0 0 1px rgba(0,0,0,0.06);
+  box-shadow: none;
 }
 
 /* ═══════════════════════════════════════════════
@@ -31,7 +38,7 @@ body.edit-mode #stage {
 ═══════════════════════════════════════════════ */
 #panel {
   position: fixed;
-  top: 0; right: 0; bottom: var(--bar-h);
+  top: 0; right: 0; bottom: 0;
   width: 256px;
   background: var(--panel-bg, rgba(248,244,240,0.97));
   backdrop-filter: blur(24px);
@@ -68,7 +75,7 @@ body.edit-mode #panel { transform: translateX(0); }
 .pnl-history {
   flex: 1; overflow: hidden;
   display: flex; flex-direction: column;
-  min-height: 80px;
+  min-height: 132px;
 }
 .pnl-label {
   font-size: 0.7rem; font-weight: 700;
@@ -109,6 +116,23 @@ body.edit-mode #panel { transform: translateX(0); }
 }
 .ratio-btn:hover { border-color: var(--accent); }
 .ratio-btn.active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 700; }
+
+/* ── 留白滑条 ── */
+.pad-sliders { display: flex; flex-direction: column; gap: 8px; }
+.pad-row { display: flex; align-items: center; gap: 8px; }
+.pad-name { font-size: 0.75rem; color: var(--muted); width: 24px; flex-shrink: 0; }
+.pad-row input[type=range] {
+  flex: 1; height: 3px; accent-color: var(--accent);
+  cursor: pointer; appearance: none; -webkit-appearance: none;
+  background: var(--border); border-radius: 2px; outline: none;
+}
+.pad-row input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--accent); border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2); cursor: pointer;
+}
+.pad-val { font-size: 0.72rem; color: var(--muted); width: 28px; text-align: right; flex-shrink: 0; font-variant-numeric: tabular-nums; }
 
 /* ── 幻灯片列表 ── */
 #slide-nav { display: flex; flex-direction: column; gap: 2px; }
@@ -162,7 +186,7 @@ body.edit-mode #panel { transform: translateX(0); }
 /* ── 悬浮编辑按钮 ── */
 #btn-edit {
   position: fixed;
-  bottom: calc(var(--bar-h) + 14px); right: 16px;
+  bottom: 14px; right: 16px;
   width: 42px; height: 42px; border-radius: 50%;
   background: var(--surface); backdrop-filter: blur(12px);
   border: 1px solid var(--border); font-size: 1.1rem;
@@ -175,7 +199,7 @@ body.edit-mode #btn-edit { opacity: 0; pointer-events: none; }
 
 /* ── Toast ── */
 #toast {
-  position: fixed; bottom: calc(var(--bar-h) + 20px); left: 50%;
+  position: fixed; bottom: 20px; left: 50%;
   transform: translateX(-50%) translateY(8px);
   background: var(--text); color: var(--bg-base, #f2ede8);
   padding: 8px 20px; border-radius: 20px; font-size: 0.85rem;
@@ -199,9 +223,37 @@ body.edit-mode .slide.active em,
 body.edit-mode .slide.active code { outline: none; }
 body.edit-mode .slide.active .edit-selected { outline: none !important; }
 
-/* 编辑时整个 slide 显示可拖拽光标 */
-body.edit-mode .slide.active { cursor: grab; }
-body.edit-mode .slide.active *:not(.edit-selected) { cursor: grab; }
+/* 编辑模式光标：默认箭头，可选中元素用 grab 提示可拖拽 */
+body.edit-mode .slide.active { cursor: default; }
+body.edit-mode .slide.active .background > *,
+body.edit-mode .slide.active .slide-content > *,
+body.edit-mode .slide.active .slide-center > *,
+body.edit-mode .slide.active .layout-cover > *,
+body.edit-mode .slide.active .layout-section > *,
+body.edit-mode .slide.active .layout-closing > *,
+body.edit-mode .slide.active .layout-hero > *,
+body.edit-mode .slide.active .layout-quote > *,
+body.edit-mode .slide.active .layout-image-right > .text-col > *,
+body.edit-mode .slide.active .layout-image-right > .img-col > *,
+body.edit-mode .slide.active .layout-image-left > .text-col > *,
+body.edit-mode .slide.active .layout-image-left > .img-col > *,
+body.edit-mode .slide.active .layout-stats > *,
+body.edit-mode .slide.active .layout-timeline > *,
+body.edit-mode .slide.active .grid > *,
+body.edit-mode .slide.active .steps > *,
+body.edit-mode .slide.active .stats-row > *,
+body.edit-mode .slide.active .compare > *,
+body.edit-mode .slide.active .timeline > * { cursor: grab; }
+body.edit-mode.dragging .slide.active,
+body.edit-mode.dragging .slide.active * { cursor: grabbing !important; }
+
+/* Plotly 图表自带 crosshair 光标，强制覆盖 */
+.slide .cursor-crosshair,
+.slide .cursor-crosshair .nsewdrag { cursor: default !important; }
+
+/* 双击进入文字编辑时恢复文本光标 */
+body.edit-mode .slide.active .text-editing,
+body.edit-mode .slide.active .text-editing * { cursor: text !important; }
 
 /* 框选矩形 */
 #sel-marquee {
@@ -229,21 +281,23 @@ body.edit-mode.multi-select .slide.active .edit-selected {
 }
 /* 右下角：等比缩放 */
 .sel-resize {
-  position: absolute; bottom: -7px; right: -7px;
-  width: 14px; height: 14px;
+  position: absolute;
+  bottom: calc(var(--hz, 14px) / -2); right: calc(var(--hz, 14px) / -2);
+  width: var(--hz, 14px); height: var(--hz, 14px);
   background: var(--accent, #c05530); border: 2px solid #fff;
   border-radius: 3px; cursor: nwse-resize; pointer-events: all;
 }
 /* 左下角：旋转 */
 .sel-rotate {
-  position: absolute; bottom: -7px; left: -7px;
-  width: 14px; height: 14px;
+  position: absolute;
+  bottom: calc(var(--hz, 14px) / -2); left: calc(var(--hz, 14px) / -2);
+  width: var(--hz, 14px); height: var(--hz, 14px);
   background: #4a90d9; border: 2px solid #fff;
-  border-radius: 50%; cursor: crosshair; pointer-events: all;
+  border-radius: 50%; cursor: grab !important; pointer-events: all;
 }
 /* 重置按钮（右上角） */
 .sel-reset {
-  position: absolute; top: -22px; right: 0;
+  position: absolute; top: calc(var(--hz, 14px) * -1.6); right: 0;
   background: var(--panel-bg, #f8f4f0); border: 1px solid var(--border);
   color: var(--muted); padding: 2px 7px; border-radius: 0 4px 4px 4px;
   font-size: 12px; cursor: pointer; pointer-events: all;
@@ -257,16 +311,16 @@ body.edit-mode.multi-select .slide.active .edit-selected {
   border-radius: 3px; pointer-events: all;
 }
 .sel-edge-t, .sel-edge-b {
-  width: 28px; height: 8px;
+  width: calc(var(--hz, 14px) * 2); height: calc(var(--hz, 14px) * 4 / 7);
   left: 50%; transform: translateX(-50%);
   cursor: ns-resize;
 }
-.sel-edge-t { top: -4px; }
-.sel-edge-b { bottom: -4px; }
+.sel-edge-t { top:    calc(var(--hz, 14px) * -2 / 7); }
+.sel-edge-b { bottom: calc(var(--hz, 14px) * -2 / 7); }
 .sel-edge-l, .sel-edge-r {
-  width: 8px; height: 28px;
+  width: calc(var(--hz, 14px) * 4 / 7); height: calc(var(--hz, 14px) * 2);
   top: 50%; transform: translateY(-50%);
   cursor: ew-resize;
 }
-.sel-edge-l { left: -4px; }
-.sel-edge-r { right: -4px; }
+.sel-edge-l { left:  calc(var(--hz, 14px) * -2 / 7); }
+.sel-edge-r { right: calc(var(--hz, 14px) * -2 / 7); }

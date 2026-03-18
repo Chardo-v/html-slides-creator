@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title></title>
-  <link rel="stylesheet" href="theme.css">
-  <link rel="stylesheet" href="transitions.css">
-  <link rel="stylesheet" href="editor.css">
+  <link rel="stylesheet" href="utils/theme.css">
+  <link rel="stylesheet" href="utils/transitions.css">
+  <link rel="stylesheet" href="utils/editor.css">
 </head>
 <body data-transition="slide">
 
@@ -58,6 +58,22 @@
       </div>
 
       <div class="pnl-section">
+        <div class="pnl-label">留白</div>
+        <div class="pad-sliders">
+          <div class="pad-row">
+            <span class="pad-name">左右</span>
+            <input type="range" id="slider-h-pad" min="0" max="0.3" step="0.01">
+            <span id="label-h-pad" class="pad-val"></span>
+          </div>
+          <div class="pad-row">
+            <span class="pad-name">上下</span>
+            <input type="range" id="slider-v-pad" min="0" max="0.3" step="0.01">
+            <span id="label-v-pad" class="pad-val"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pnl-section">
         <div class="pnl-label">页面</div>
         <div id="slide-nav"></div>
       </div>
@@ -67,19 +83,23 @@
         <div id="history-list"></div>
       </div>
 
-      <div class="pnl-footer">
-        <button id="btn-save"  class="pnl-btn-primary">💾 保存所有编辑</button>
-        <button id="btn-reset" class="pnl-btn-ghost">↺ 重置当前页</button>
-      </div>
-
     </div>
+
+  <div class="pnl-footer">
+    <button id="btn-save"  class="pnl-btn-primary">💾 保存所有编辑</button>
+    <button id="btn-reset" class="pnl-btn-ghost">↺ 重置当前页</button>
+  </div>
+
   </aside>
 
   <button id="btn-edit" title="打开编辑器">✎</button>
   <div id="toast"></div>
 
-  <script src="slides.js"></script>
-  <script src="themes.js"></script>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <script src="utils/charts.js"></script>
+  <script src="utils/plotly-charts.js"></script>
+  <script src="example-slides/slides.js"></script>
+  <script src="utils/themes.js"></script>
   <script>
     const deck    = document.getElementById('deck');
     const fill    = document.getElementById('fill');
@@ -89,15 +109,21 @@
     // 从配置读取标题
     document.title = GLOBAL_CONFIG.title || 'AIPresent';
 
-    // 从配置 & localStorage 应用页面比例
+    // 从配置 & localStorage 应用页面比例 + 留白
     (function applyRatio() {
       const saved = localStorage.getItem('pres-aspect-ratio');
       const ratio = saved || GLOBAL_CONFIG.aspectRatio || '16:9';
       const [rw, rh] = ratio.split(':');
       document.documentElement.style.setProperty('--aspect-ratio', `${rw}/${rh}`);
-      // 同步 GLOBAL_CONFIG padding → CSS vars（供 AI 生成的 slide 使用）
-      document.documentElement.style.setProperty('--v-pad', GLOBAL_CONFIG.vPad + 'px');
-      document.documentElement.style.setProperty('--h-pad', GLOBAL_CONFIG.hPad + 'px');
+      // 留白：以相对比例存储，转换为 deck 坐标系下的 px
+      const BASE_W = 1600;
+      const deckH  = BASE_W * parseFloat(rh) / parseFloat(rw);
+      const defHRatio = GLOBAL_CONFIG.hPad / BASE_W;
+      const defVRatio = GLOBAL_CONFIG.vPad / deckH;
+      const hRatio = parseFloat(localStorage.getItem('pres-h-pad-ratio') ?? defHRatio);
+      const vRatio = parseFloat(localStorage.getItem('pres-v-pad-ratio') ?? defVRatio);
+      document.documentElement.style.setProperty('--h-pad', (hRatio * BASE_W) + 'px');
+      document.documentElement.style.setProperty('--v-pad', (vRatio * deckH)  + 'px');
     })();
 
     async function init() {
@@ -124,6 +150,7 @@
       counter.textContent = `${cur + 1} / ${SLIDES.length}`;
       fill.style.width = `${(cur + 1) / SLIDES.length * 100}%`;
       if (window.onSlideChange) window.onSlideChange(index);
+      window.dispatchEvent(new CustomEvent('slide-change', { detail: { index } }));
     }
 
     const next = () => cur < SLIDES.length - 1 && go(cur + 1);
@@ -142,6 +169,6 @@
 
     init();
   </script>
-  <script src="editor.js"></script>
+  <script src="utils/editor.js"></script>
 </body>
 </html>
