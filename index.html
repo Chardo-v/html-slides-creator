@@ -27,6 +27,7 @@
     <span id="counter">— / —</span>
     <div id="track"><div id="fill"></div></div>
     <span id="hint">空格 / → 下一页 &nbsp;← 上一页</span>
+    <button id="btn-export-pdf" type="button" title="导出当前演示为 PDF">导出 PDF</button>
   </footer>
 
   <!-- 编辑面板 -->
@@ -86,6 +87,7 @@
     </div>
 
   <div class="pnl-footer">
+    <button id="btn-export-pdf-panel" class="pnl-btn-ghost">⇩ 导出 PDF</button>
     <button id="btn-save"  class="pnl-btn-primary">💾 保存所有编辑</button>
     <button id="btn-reset" class="pnl-btn-ghost">↺ 重置当前页</button>
   </div>
@@ -104,6 +106,8 @@
     const deck    = document.getElementById('deck');
     const fill    = document.getElementById('fill');
     const counter = document.getElementById('counter');
+    const btnExportPdf = document.getElementById('btn-export-pdf');
+    const btnExportPdfPanel = document.getElementById('btn-export-pdf-panel');
     let cur = 0;
 
     // 从配置读取标题
@@ -163,6 +167,9 @@
       if ([' ', 'ArrowRight', 'ArrowDown'].includes(e.key)) { e.preventDefault(); next(); }
       if (['ArrowLeft', 'ArrowUp'].includes(e.key))         { e.preventDefault(); prev(); }
     });
+
+    btnExportPdf?.addEventListener('click', () => window.print());
+    btnExportPdfPanel?.addEventListener('click', () => window.print());
 
     deck.addEventListener('click', () => {
       if (!document.body.classList.contains('edit-mode')) next();

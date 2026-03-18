@@ -324,3 +324,58 @@ body.edit-mode.multi-select .slide.active .edit-selected {
 }
 .sel-edge-l { left:  calc(var(--hz, 14px) * -2 / 7); }
 .sel-edge-r { right: calc(var(--hz, 14px) * -2 / 7); }
+
+/* ═══════════════════════════════════════════════
+   打印覆盖（放在最后，确保覆盖编辑/舞台定位）
+═══════════════════════════════════════════════ */
+@media print {
+  @page { margin: 0; }
+
+  html, body {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  #stage {
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  #deck {
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    width: 100% !important;
+    aspect-ratio: auto !important;
+    transform: none !important;
+    transform-origin: top left !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  .slide {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    width: 100% !important;
+    aspect-ratio: var(--aspect-ratio, 16 / 9) !important;
+    opacity: 1 !important;
+    transform: none !important;
+    page-break-after: always;
+    break-after: page;
+  }
+
+  .slide:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  #sel-marquee, #sel-overlay {
+    display: none !important;
+  }
+}
